@@ -1,11 +1,21 @@
 ﻿@using GovUk.Frontend.AspNetCore
 
+@{
+    var titleDescription = Context.Request.Path == "/" ? string.Empty : "- Unified Intake";
+}
+
 <!DOCTYPE html>
 <html>
 <head>
     @Html.GovUkFrontendStyleImports()
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <link rel="shortcut icon" sizes="16x16 32x32 48x48" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="mask-icon" href="/images/govuk-icon-mask.svg" color="#1d70b8">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/govuk-icon-180.png">
+
+    <title>@ViewData["Title"] @titleDescription</title>
 </head>
 <body class="govuk-template__body">
     @Html.GovUkFrontendJsEnabledScript()
@@ -23,6 +33,9 @@
     <partial name="_Footer" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
