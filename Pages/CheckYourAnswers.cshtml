@@ -1,0 +1,97 @@
+@page
+@model CheckYourAnswersModel
+@{
+    ViewData["Title"] = "Check your answers";
+}
+
+@section BeforeMain
+{
+    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/AboutYou">Back</a>
+}
+
+<h1 class="govuk-heading-l">Check your answers</h1>
+
+<h2 class="govuk-heading-m">What you need</h2>
+
+<govuk-summary-list>
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Which service is your request for?</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.Service</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/TellUsWhatYouNeed">
+                Change<span class="govuk-visually-hidden"> which service is your request for</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>What is your request about?</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.RequestType</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/TellUsWhatYouNeed">
+                Change<span class="govuk-visually-hidden"> what your request is about</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+</govuk-summary-list>
+
+<h2 class="govuk-heading-m govuk-!-margin-top-6">About you</h2>
+
+<govuk-summary-list>
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Full name</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.FullName</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AboutYou">
+                Change<span class="govuk-visually-hidden"> full name</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Email address</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.EmailAddress</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AboutYou">
+                Change<span class="govuk-visually-hidden"> email address</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Request details</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.RequestDetails</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AboutYou">
+                Change<span class="govuk-visually-hidden"> request details</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Supporting documentation</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@(Model.SupportingInformationFileName ?? "None")</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AboutYou">
+                Change<span class="govuk-visually-hidden"> supporting documentation</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Can we contact you if we need more information?</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.CanContact</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AboutYou">
+                Change<span class="govuk-visually-hidden"> whether we can contact you</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+</govuk-summary-list>
+
+<h2 class="govuk-heading-m govuk-!-margin-top-6">Now send your request</h2>
+<p class="govuk-body">By submitting this request you are confirming that, to the best of your knowledge, the details you are providing are correct.</p>
+
+<form method="post">
+    <govuk-button>Submit request</govuk-button>
+</form>

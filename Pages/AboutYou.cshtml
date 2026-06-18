@@ -1,0 +1,55 @@
+@page
+@model AboutYouModel
+@{
+    ViewData["Title"] = "About you";
+}
+
+@section BeforeMain
+{
+    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/TellUsWhatYouNeed">Back</a>
+}
+
+<h1 class="govuk-heading-l">About you</h1>
+
+<form method="post" enctype="multipart/form-data">
+    <govuk-input for="FullName">
+        <govuk-input-label class="govuk-label--s">Full name</govuk-input-label>
+    </govuk-input>
+
+    <govuk-input for="EmailAddress" type="email" autocomplete="email">
+        <govuk-input-label class="govuk-label--s">Email address</govuk-input-label>
+        <govuk-input-hint>We'll use this to send updates about your request</govuk-input-hint>
+    </govuk-input>
+
+    <govuk-character-count for="RequestDetails" max-length="1000">
+        <govuk-character-count-label class="govuk-label--s">Request details</govuk-character-count-label>
+        <govuk-character-count-hint>Describe your request. Include what you were trying to do, what happened, and any other relevant information.</govuk-character-count-hint>
+    </govuk-character-count>
+
+    <govuk-radios for="CanContact" class="govuk-radios--inline">
+        <govuk-radios-fieldset>
+            <govuk-radios-fieldset-legend class="govuk-fieldset__legend--s govuk-!-font-weight-bold">Can we contact you if we need more information?</govuk-radios-fieldset-legend>
+            <govuk-radios-hint>If you're happy to be contacted, we may use your personal information to do so.</govuk-radios-hint>
+            <govuk-radios-item value="yes">Yes</govuk-radios-item>
+            <govuk-radios-item value="no">No</govuk-radios-item>
+        </govuk-radios-fieldset>
+    </govuk-radios>
+
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <h2 class="govuk-heading-m">Supporting documentation</h2>
+
+    <govuk-warning-text>
+        Do not upload personal, sensitive or classified information unless you have been asked to.
+        If your information includes any of these, you may be contacted to discuss alternative ways to share it more securely.
+    </govuk-warning-text>
+
+    <h3 class="govuk-heading-s">Upload your documents</h3>
+    <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than 25MB.</p>
+
+    <govuk-file-upload for="SupportingInformation" multiple="true">
+        <govuk-file-upload-label class="govuk-visually-hidden">Upload your documents</govuk-file-upload-label>
+    </govuk-file-upload>
+
+    <govuk-button>Continue</govuk-button>
+</form>

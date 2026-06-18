@@ -5,18 +5,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Dfe.Unified.Intake.Pages
 {
-    public class IndexModel : PageModel
+    public class RequestSubmittedModel : PageModel
     {
+        public string? ReferenceNumber { get; private set; }
+
         public void OnGet()
         {
-
+            ReferenceNumber = Session.GetReferenceNumber(HttpContext.Session);
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public IActionResult OnPost()
         {
             Session.Reset(HttpContext.Session);
-
-            return RedirectToPage(Links.TellUsWhatYouNeed.PageName);
+            return RedirectToPage(Links.Index.PageName);
         }
     }
 }

@@ -1,10 +1,20 @@
 ﻿@page
 @model IndexModel
+
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Begin now";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@* <a govuk-back-link href="javascript:history.back()">Back</a> *@
+
+<label class="govuk-label govuk-label--l">
+    Begin now
+</label>
+
+<p class="govuk-body">Use this service to suggest an improvement and report a problem.</p>
+
+@* <govuk-button-link is-start-button="true" href="/start">Start now</govuk-button-link> *@
+
+<form method="post">
+    <govuk-button is-start-button="true" prevent-double-click="true">Start now</govuk-button>
+</form>

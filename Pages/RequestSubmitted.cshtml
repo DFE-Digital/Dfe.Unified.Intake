@@ -1,0 +1,36 @@
+@page
+@model RequestSubmittedModel
+@{
+    ViewData["Title"] = "Request submitted";
+}
+
+<govuk-panel>
+    <govuk-panel-title>Request submitted</govuk-panel-title>
+    <govuk-panel-body>
+        Your reference number<br />
+        <strong>@Model.ReferenceNumber</strong>
+    </govuk-panel-body>
+</govuk-panel>
+
+<p class="govuk-body govuk-!-margin-top-6">We have sent you a confirmation email.</p>
+<p class="govuk-body">Please quote your reference number when contacting us about this request.</p>
+
+<h2 class="govuk-heading-m">What happens next</h2>
+<ol class="govuk-list govuk-list--number">
+    <li>We will review your request</li>
+    <li>We will route it to the appropriate team</li>
+    <li>We may contact you if we need more information</li>
+    <li>We will keep a record of the outcome</li>
+</ol>
+
+<h2 class="govuk-heading-m">If you have suggested an improvement</h2>
+<p class="govuk-body">We will review all requests, but submitting a request does not guarantee a change will be made.</p>
+<p class="govuk-body">Suggestions are considered alongside user needs, priorities, delivery capacity and strategic objectives.</p>
+
+<p class="govuk-body">
+    <a class="govuk-link" href="#">What did you think of this service?</a> (takes 30 seconds)
+</p>
+
+<form method="post">
+    <govuk-button>Start a new request</govuk-button>
+</form>
