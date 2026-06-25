@@ -16,5 +16,6 @@
 @* <govuk-button-link is-start-button="true" href="/start">Start now</govuk-button-link> *@
 
 <form method="post">
+    <input type="hidden" asp-for="ServiceCode" />
     <govuk-button is-start-button="true" prevent-double-click="true">Start now</govuk-button>
 </form>

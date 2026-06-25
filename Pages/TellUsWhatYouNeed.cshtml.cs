@@ -16,10 +16,29 @@ namespace Dfe.Unified.Intake.Pages
         [Required(ErrorMessage = "Select what your request is about")]
         public string? RequestType { get; set; }
 
-        public void OnGet()
+        // Valid service codes, matching the "Which service is your request for?" dropdown values.
+        private static readonly string[] ValidServiceCodes =
+            { "MSI", "Prepare", "Complete", "FAST", "RECAST", "MFSP" };
+
+        // When a valid serviceCode query string is supplied, the dropdown is pre-selected and locked.
+        public bool ServiceLocked { get; private set; }
+
+        public void OnGet(string? serviceCode)
         {
             Service = Session.GetTellUsWhatYouNeedService(HttpContext.Session);
             RequestType = Session.GetTellUsWhatYouNeed(HttpContext.Session);
+
+            if (!string.IsNullOrWhiteSpace(serviceCode))
+            {
+                var match = ValidServiceCodes.FirstOrDefault(
+                    code => string.Equals(code, serviceCode, StringComparison.OrdinalIgnoreCase));
+
+                if (match is not null)
+                {
+                    Service = match;
+                    ServiceLocked = true;
+                }
+            }
         }
 
         public IActionResult OnPost()
