@@ -28,6 +28,13 @@
                 <p class="govuk-body">Use this service to suggest an improvement or report a problem.</p>
                 <form method="post" action="/Index">
                     @Html.AntiForgeryToken()
+                    @{
+                        var footerServiceCode = Context.Request.Query["serviceCode"].ToString();
+                    }
+                    @if (!string.IsNullOrWhiteSpace(footerServiceCode))
+                    {
+                        <input type="hidden" name="ServiceCode" value="@footerServiceCode" />
+                    }
                     <govuk-button class="govuk-button--secondary">Create a request</govuk-button>
                 </form>
             </div>
