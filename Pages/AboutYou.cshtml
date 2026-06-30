@@ -6,7 +6,7 @@
 
 @section BeforeMain
 {
-    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/TellUsWhatYouNeed">Back</a>
+    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/Index">Back</a>
 }
 
 <h1 class="govuk-heading-l">About you</h1>
@@ -47,7 +47,10 @@
     <h3 class="govuk-heading-s">Upload your documents</h3>
     <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than 25MB.</p>
 
-    <govuk-file-upload for="SupportingInformation" multiple="true">
+    <govuk-file-upload for="SupportingInformation"
+                       multiple="true"
+                       javascript-enhancements="true"
+                       accept=".png,.jpg,.jpeg,.pdf,.docx,.xlsx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
         <govuk-file-upload-label class="govuk-visually-hidden">Upload your documents</govuk-file-upload-label>
     </govuk-file-upload>
 

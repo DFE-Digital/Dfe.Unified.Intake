@@ -27,13 +27,25 @@ namespace Dfe.Unified.Intake.Pages
             FullName = Session.GetAboutYouFullName(HttpContext.Session);
             EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session);
             RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session);
-            SupportingInformationFileName = Session.GetAboutYouSupportingInformationFileName(HttpContext.Session);
+
+            var documents = SupportingDocuments.GetAll(HttpContext.Session);
+            SupportingInformationFileName = documents.Count > 0
+                ? string.Join(", ", documents.Select(d => d.FileName))
+                : null;
+
             CanContact = FormatValue(Session.GetAboutYouCanContact(HttpContext.Session));
         }
 
-        public IActionResult OnPost()
+        public async Task<IActionResult> OnPost()
         {
-            // TODO: submit request to backend
+            // TODO: submit request (including the supporting documents below) to the backend.
+            // The uploaded file contents are available here for the duration of the session, e.g.:
+            //
+            foreach (var document in SupportingDocuments.GetAll(HttpContext.Session))
+            {
+                await using var contents = SupportingDocuments.OpenRead(HttpContext.Session, document);
+                // ... send `contents` (document.FileName, document.ContentType, document.Length) ...
+            }
 
             Session.SetReferenceNumber(HttpContext.Session, GenerateReferenceNumber());
             return RedirectToPage(Links.RequestSubmitted.PageName);

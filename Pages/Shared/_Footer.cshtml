@@ -26,8 +26,7 @@
                 <h2 class="govuk-heading-m govuk-!-margin-top-3">Submit a request</h2>
                 <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
                 <p class="govuk-body">Use this service to suggest an improvement or report a problem.</p>
-                <form method="post" action="/Index">
-                    @Html.AntiForgeryToken()
+                <form method="post" asp-page="/Index" asp-page-handler="CreateRequest">
                     @{
                         var footerServiceCode = Context.Request.Query["serviceCode"].ToString();
                     }
