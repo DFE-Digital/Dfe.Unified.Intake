@@ -21,9 +21,12 @@ namespace Dfe.Unified.Intake.Pages
         [EmailAddress(ErrorMessage = "Enter a valid email address")]
         public string? EmailAddress { get; set; }
 
+        // Single source of truth for the request-details limit, shared with the character-count
+        // component in AboutYou.cshtml. Update here to change it everywhere.
+        public const int MaxRequestDetailsLength = 2000;
+
         [BindProperty]
         [Required(ErrorMessage = "Enter details about your request")]
-        [MaxLength(1000, ErrorMessage = "Request details must be 1000 characters or less")]
         public string? RequestDetails { get; set; }
 
         [BindProperty]
@@ -51,6 +54,7 @@ namespace Dfe.Unified.Intake.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            ValidateRequestDetailsLength();
             ValidateSupportingInformation();
 
             if (!ModelState.IsValid)
@@ -68,6 +72,23 @@ namespace Dfe.Unified.Intake.Pages
                 await SupportingDocuments.SaveAsync(HttpContext.Session, SupportingInformation);
 
             return RedirectToPage(Links.CheckYourAnswers.PageName);
+        }
+
+        // Enforce the request-details character limit server-side. The browser's character-count
+        // component counts a newline as a single character (LF), but the form posts each newline as
+        // CRLF (2 chars). Normalise to LF first so the server counts exactly what the user sees —
+        // otherwise text that looks within the limit could be rejected early.
+        private void ValidateRequestDetailsLength()
+        {
+            if (RequestDetails is null)
+                return;
+
+            RequestDetails = RequestDetails.Replace("\r\n", "\n");
+
+            if (RequestDetails.Length > MaxRequestDetailsLength)
+                ModelState.AddModelError(
+                    nameof(RequestDetails),
+                    $"Request details must be {MaxRequestDetailsLength} characters or less");
         }
 
         // Uploading supporting documentation is optional, but anything provided must satisfy the

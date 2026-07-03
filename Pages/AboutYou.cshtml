@@ -21,7 +21,7 @@
         <govuk-input-hint>We'll use this to send updates about your request</govuk-input-hint>
     </govuk-input>
 
-    <govuk-character-count for="RequestDetails" max-length="1000">
+    <govuk-character-count for="RequestDetails" max-length="@AboutYouModel.MaxRequestDetailsLength">
         <govuk-character-count-label class="govuk-label--s">Request details</govuk-character-count-label>
         <govuk-character-count-hint>Describe your request. Include what you were trying to do, what happened, and any other relevant information.</govuk-character-count-hint>
     </govuk-character-count>

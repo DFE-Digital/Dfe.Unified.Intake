@@ -24,6 +24,8 @@ namespace Dfe.Unified.Intake
 
             services.AddSession();
 
+            services.AddHttpClient();
+
             services.AddHttpContextAccessor();
 
             services.AddGovUkFrontend();

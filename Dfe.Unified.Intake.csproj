@@ -12,4 +12,16 @@
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Images\" />
+  </ItemGroup>
+
+  <!-- The test project lives in a subfolder; keep its sources out of this web project's default globbing. -->
+  <ItemGroup>
+    <Compile Remove="Dfe.Unified.Intake.Tests\**" />
+    <Content Remove="Dfe.Unified.Intake.Tests\**" />
+    <None Remove="Dfe.Unified.Intake.Tests\**" />
+    <EmbeddedResource Remove="Dfe.Unified.Intake.Tests\**" />
+  </ItemGroup>
+
 </Project>

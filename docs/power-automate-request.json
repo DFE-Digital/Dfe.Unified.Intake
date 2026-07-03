@@ -1,0 +1,17 @@
+﻿{
+  "requestType": "Suggest a change",
+  "service": "Manage School Improvements (MSI)",
+  "submittedBy": {
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  },
+  "requestDetails": "Improve the dashboard to make it easier to filter data by multiple criteria.",
+  "contactPermission": "yes",
+  "attachments": [
+    {
+      "fileName": "dashboard-feedback.png",
+      "contentType": "image/png",
+      "content": "iVBORw0KGgoAAAANSUhEUgAA..."
+    }
+  ]
+}
