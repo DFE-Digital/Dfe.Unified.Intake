@@ -4,11 +4,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>251e3c8b-7861-4477-95e5-e051c13e9830</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="GovUk.Frontend.AspNetCore" Version="4.1.1" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.7.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
   </ItemGroup>
 

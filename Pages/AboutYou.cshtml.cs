@@ -3,13 +3,15 @@ using Dfe.Unified.Intake.Pages.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace Dfe.Unified.Intake.Pages
 {
-    // Allow the supporting documentation upload (up to 20 files at 25MB each) through the default
-    // Kestrel body-size and multipart limits, with a little headroom for boundaries and other fields.
-    [RequestSizeLimit(20L * 25 * 1024 * 1024 + 10 * 1024 * 1024)]
-    [RequestFormLimits(MultipartBodyLengthLimit = 20L * 25 * 1024 * 1024 + 10 * 1024 * 1024)]
+    // Allow the supporting documentation upload through the default Kestrel body-size and multipart
+    // limits. The cap is derived from the per-file rules below, with a little headroom for boundaries
+    // and other form fields.
+    [RequestSizeLimit(MaxUploadRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadRequestBytes)]
     public class AboutYouModel : PageModel
     {
         [BindProperty]
@@ -36,48 +38,87 @@ namespace Dfe.Unified.Intake.Pages
         [BindProperty]
         public IFormFileCollection? SupportingInformation { get; set; }
 
+        // Names of the documents already stored for this session, shown read-only. An HTML file input
+        // cannot be pre-populated, so listing the names is how a returning user sees what they have
+        // already uploaded.
+        public IReadOnlyList<string> UploadedFileNames { get; private set; } = Array.Empty<string>();
+
         // Constraints for "Supporting documentation". The improved file upload component cannot enforce
         // file count or size, so these are validated server-side; accept= only hints the file picker.
         private const int MaxFileCount = 20;
         private const long MaxFileSizeBytes = 25 * 1024 * 1024; // 25MB
+
+        // The most a valid submission could weigh: every file at the maximum size and count, plus
+        // headroom for multipart boundaries, part headers and the other form fields. Used by the
+        // request-size attributes so a within-rules upload reaches server-side validation rather than
+        // being rejected by the framework first.
+        private const long MaxUploadRequestHeadroomBytes = 10 * 1024 * 1024; // 10MB
+        private const long MaxUploadRequestBytes = MaxFileCount * MaxFileSizeBytes + MaxUploadRequestHeadroomBytes;
 
         private static readonly string[] AllowedExtensions =
             { ".png", ".jpg", ".jpeg", ".pdf", ".docx", ".xlsx" };
 
         public void OnGet()
         {
-            FullName = Session.GetAboutYouFullName(HttpContext.Session);
-            EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session);
+            // Anything the user has already entered on this page takes precedence. Otherwise, fall back
+            // to the signed-in user's details so a first visit arrives pre-filled with their name and email.
+            FullName = Session.GetAboutYouFullName(HttpContext.Session) ?? CurrentUserFullName;
+            EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session) ?? CurrentUserEmailAddress;
             RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session);
             CanContact = Session.GetAboutYouCanContact(HttpContext.Session);
+            LoadUploadedFileNames();
         }
+
+        // The application signs users in with their DfE account, so their details are carried on the
+        // identity as claims. Azure AD issues the display name in the "name" claim and the email address
+        // in the "preferred_username" claim (which is what the identity name maps to, so we read the
+        // claims directly to keep the two values distinct).
+        private string? CurrentUserFullName =>
+            User.FindFirst("name")?.Value
+            ?? User.FindFirst(ClaimTypes.GivenName)?.Value;
+
+        private string? CurrentUserEmailAddress =>
+            User.FindFirst("preferred_username")?.Value
+            ?? User.FindFirst(ClaimTypes.Email)?.Value
+            ?? User.FindFirst(ClaimTypes.Upn)?.Value;
 
         public async Task<IActionResult> OnPost()
         {
             ValidateRequestDetailsLength();
             ValidateSupportingInformation();
 
+            // Persist the file contents (not just their names) as soon as the files themselves are valid,
+            // before the model-state gate below. The browser discards the file input on every POST, so
+            // saving here means a valid selection survives — and stays listed under "Files added" — even
+            // when another field on the page is invalid. If the input is empty (nothing re-selected) we
+            // keep whatever was already stored; files are only replaced by a fresh, valid selection.
+            if (SupportingInformation is { Count: > 0 } && SupportingInformationIsValid)
+                await SupportingDocuments.SaveAsync(HttpContext.Session, SupportingInformation);
+
             if (!ModelState.IsValid)
+            {
+                LoadUploadedFileNames();
                 return Page();
+            }
 
             Session.SetAboutYouFullName(HttpContext.Session, FullName!);
             Session.SetAboutYouEmailAddress(HttpContext.Session, EmailAddress!);
             Session.SetAboutYouRequestDetails(HttpContext.Session, RequestDetails!);
             Session.SetAboutYouCanContact(HttpContext.Session, CanContact!);
 
-            // Persist the file contents (not just their names) so they're still available when the
-            // request is submitted. If the user returns and submits without re-selecting files, the
-            // input is empty and we keep whatever was already stored.
-            if (SupportingInformation is { Count: > 0 })
-                await SupportingDocuments.SaveAsync(HttpContext.Session, SupportingInformation);
-
             return RedirectToPage(Links.CheckYourAnswers.PageName);
         }
 
-        // Enforce the request-details character limit server-side. The browser's character-count
-        // component counts a newline as a single character (LF), but the form posts each newline as
-        // CRLF (2 chars). Normalise to LF first so the server counts exactly what the user sees —
-        // otherwise text that looks within the limit could be rejected early.
+        // True unless the supplied files failed their own validation (extension, size or count). Used to
+        // decide whether a selection is safe to store even when other fields on the page are invalid.
+        private bool SupportingInformationIsValid =>
+            !ModelState.TryGetValue(nameof(SupportingInformation), out var entry) || entry.Errors.Count == 0;
+
+        private void LoadUploadedFileNames() =>
+            UploadedFileNames = SupportingDocuments.GetAll(HttpContext.Session)
+                .Select(d => d.FileName)
+                .ToList();
+
         private void ValidateRequestDetailsLength()
         {
             if (RequestDetails is null)

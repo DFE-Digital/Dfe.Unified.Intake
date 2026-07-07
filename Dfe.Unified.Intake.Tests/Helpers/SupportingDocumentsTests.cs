@@ -14,7 +14,6 @@ namespace Dfe.Unified.Intake.Tests.Helpers
         [SetUp]
         public void SetUp()
         {
-            // Unique id per test so the per-session temp folder never collides between tests.
             _session = new FakeSession(Guid.NewGuid().ToString("N"));
         }
 

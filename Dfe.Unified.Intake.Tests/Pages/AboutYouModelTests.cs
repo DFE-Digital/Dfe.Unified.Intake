@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Dfe.Unified.Intake.Pages;
 using Dfe.Unified.Intake.Pages.Helpers;
@@ -44,6 +45,65 @@ namespace Dfe.Unified.Intake.Tests.Pages
                 Assert.That(model.RequestDetails, Is.EqualTo("Please help"));
                 Assert.That(model.CanContact, Is.EqualTo("yes"));
             });
+        }
+
+        [Test]
+        public void OnGet_populates_name_and_email_from_the_signed_in_user_when_not_in_session()
+        {
+            var model = new AboutYouModel().WithContext(_session);
+            model.PageContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[]
+                {
+                    new Claim("name", "Jane Smith"),
+                    new Claim("preferred_username", "jane.smith@education.gov.uk")
+                },
+                authenticationType: "TestAuth"));
+
+            model.OnGet();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(model.FullName, Is.EqualTo("Jane Smith"));
+                Assert.That(model.EmailAddress, Is.EqualTo("jane.smith@education.gov.uk"));
+            });
+        }
+
+        [Test]
+        public void OnGet_prefers_session_values_over_the_signed_in_user()
+        {
+            Session.SetAboutYouFullName(_session, "Saved Name");
+            Session.SetAboutYouEmailAddress(_session, "saved@example.com");
+            var model = new AboutYouModel().WithContext(_session);
+            model.PageContext.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[]
+                {
+                    new Claim("name", "Jane Smith"),
+                    new Claim("preferred_username", "jane.smith@education.gov.uk")
+                },
+                authenticationType: "TestAuth"));
+
+            model.OnGet();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(model.FullName, Is.EqualTo("Saved Name"));
+                Assert.That(model.EmailAddress, Is.EqualTo("saved@example.com"));
+            });
+        }
+
+        [Test]
+        public async Task OnGet_lists_the_names_of_documents_already_stored_in_session()
+        {
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection
+            {
+                MakeFile("evidence.pdf", contentLength: 10),
+                MakeFile("photo.png", contentLength: 10)
+            });
+            var model = new AboutYouModel().WithContext(_session);
+
+            model.OnGet();
+
+            Assert.That(model.UploadedFileNames, Is.EqualTo(new[] { "evidence.pdf", "photo.png" }));
         }
 
         [Test]
@@ -99,6 +159,50 @@ namespace Dfe.Unified.Intake.Tests.Pages
             var documents = SupportingDocuments.GetAll(_session);
             Assert.That(documents, Has.Count.EqualTo(1));
             Assert.That(documents[0].FileName, Is.EqualTo("evidence.pdf"));
+        }
+
+        [Test]
+        public async Task OnPost_keeps_and_lists_valid_files_when_another_field_is_invalid()
+        {
+            var model = new AboutYouModel().WithContext(_session);
+            // Valid files, but the full name is missing, so the post fails validation.
+            model.EmailAddress = "jane@example.com";
+            model.RequestDetails = "Details";
+            model.CanContact = "yes";
+            model.SupportingInformation = new FormFileCollection
+            {
+                MakeFile("evidence.pdf", contentLength: 10)
+            };
+            model.ModelState.AddModelError(nameof(model.FullName), "Enter your full name");
+
+            var result = await model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<PageResult>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(SupportingDocuments.GetAll(_session), Has.Count.EqualTo(1));
+                Assert.That(model.UploadedFileNames, Is.EqualTo(new[] { "evidence.pdf" }));
+            });
+        }
+
+        [Test]
+        public async Task OnPost_does_not_store_files_that_fail_their_own_validation()
+        {
+            var model = new AboutYouModel().WithContext(_session);
+            SetValidDetails(model);
+            model.SupportingInformation = new FormFileCollection
+            {
+                MakeFile("virus.exe", contentLength: 10)
+            };
+
+            var result = await model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<PageResult>());
+            Assert.Multiple(() =>
+            {
+                Assert.That(SupportingDocuments.GetAll(_session), Is.Empty);
+                Assert.That(model.UploadedFileNames, Is.Empty);
+            });
         }
 
         [Test]

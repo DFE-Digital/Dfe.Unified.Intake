@@ -1,4 +1,8 @@
 ﻿using GovUk.Frontend.AspNetCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Dfe.Unified.Intake
@@ -30,7 +34,34 @@ namespace Dfe.Unified.Intake
 
             services.AddGovUkFrontend();
 
-            services.AddRazorPages();
+            // Sign users in with their DfE account (Azure AD) so the application can identify who is
+            // making a request. The signed-in user's details are then available on their identity.
+            services.AddMicrosoftIdentityWebAppAuthentication(Configuration);
+
+            services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme,
+                options =>
+                {
+                    options.Cookie.Name = ".UnifiedIntake.Login";
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.IsEssential = true;
+                });
+
+            services.AddControllersWithViews()
+                .AddMicrosoftIdentityUI();
+
+            services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
+
+            services.AddRazorPages(options =>
+            {
+                options.Conventions.AuthorizeFolder("/");
+                options.Conventions.AllowAnonymousToPage("/Error");
+                options.Conventions.AllowAnonymousToPage("/Privacy");
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
@@ -54,12 +85,14 @@ namespace Dfe.Unified.Intake
 
             app.UseSession();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapStaticAssets();
                 endpoints.MapRazorPages().WithStaticAssets();
+                endpoints.MapControllers();
             });
         }
     }
