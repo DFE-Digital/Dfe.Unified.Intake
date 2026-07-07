@@ -103,7 +103,48 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             model.OnGet();
 
-            Assert.That(model.UploadedFileNames, Is.EqualTo(new[] { "evidence.pdf", "photo.png" }));
+            Assert.That(model.UploadedDocuments.Select(d => d.FileName),
+                Is.EqualTo(new[] { "evidence.pdf", "photo.png" }));
+        }
+
+        [Test]
+        public async Task OnPostRemove_removes_the_named_file_and_keeps_the_rest()
+        {
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection
+            {
+                MakeFile("keep.pdf", contentLength: 10),
+                MakeFile("drop.pdf", contentLength: 10)
+            });
+            var storedName = SupportingDocuments.GetAll(_session)
+                .Single(d => d.FileName == "drop.pdf").StoredFileName;
+            var model = new AboutYouModel().WithContext(_session);
+
+            var result = model.OnPostRemove(storedName);
+
+            Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
+            Assert.That(((RedirectToPageResult)result).PageName, Is.Null); // reloads the same page
+            Assert.That(SupportingDocuments.GetAll(_session).Select(d => d.FileName),
+                Is.EqualTo(new[] { "keep.pdf" }));
+        }
+
+        [Test]
+        public async Task OnPostRemove_keeps_details_already_entered()
+        {
+            await SupportingDocuments.SaveAsync(_session,
+                new FormFileCollection { MakeFile("drop.pdf", contentLength: 10) });
+            var storedName = SupportingDocuments.GetAll(_session)[0].StoredFileName;
+            var model = new AboutYouModel().WithContext(_session);
+            model.FullName = "Jane Smith";
+            model.EmailAddress = "jane@example.com";
+
+            model.OnPostRemove(storedName);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(Session.GetAboutYouFullName(_session), Is.EqualTo("Jane Smith"));
+                Assert.That(Session.GetAboutYouEmailAddress(_session), Is.EqualTo("jane@example.com"));
+                Assert.That(SupportingDocuments.GetAll(_session), Is.Empty);
+            });
         }
 
         [Test]
@@ -181,7 +222,8 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.Multiple(() =>
             {
                 Assert.That(SupportingDocuments.GetAll(_session), Has.Count.EqualTo(1));
-                Assert.That(model.UploadedFileNames, Is.EqualTo(new[] { "evidence.pdf" }));
+                Assert.That(model.UploadedDocuments.Select(d => d.FileName),
+                    Is.EqualTo(new[] { "evidence.pdf" }));
             });
         }
 
@@ -201,7 +243,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.Multiple(() =>
             {
                 Assert.That(SupportingDocuments.GetAll(_session), Is.Empty);
-                Assert.That(model.UploadedFileNames, Is.Empty);
+                Assert.That(model.UploadedDocuments, Is.Empty);
             });
         }
 

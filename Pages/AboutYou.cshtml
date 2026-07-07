@@ -47,15 +47,24 @@
     <h3 class="govuk-heading-s">Upload your documents</h3>
     <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than 25MB.</p>
 
-    @if (Model.UploadedFileNames.Count > 0)
+    @if (Model.UploadedDocuments.Count > 0)
     {
-        <p class="govuk-body govuk-!-font-weight-bold">Files added</p>
-        <ul class="govuk-list govuk-list--bullet">
-            @foreach (var fileName in Model.UploadedFileNames)
+        <h3 class="govuk-heading-s">Files added</h3>
+        <dl class="govuk-summary-list govuk-!-margin-bottom-6">
+            @foreach (var document in Model.UploadedDocuments)
             {
-                <li>@fileName</li>
+                <div class="govuk-summary-list__row">
+                    <dd class="govuk-summary-list__value">@document.FileName</dd>
+                    <dd class="govuk-summary-list__actions">
+                        <button type="submit" asp-page-handler="Remove"
+                                name="storedName" value="@document.StoredFileName"
+                                class="govuk-link app-link--button" formnovalidate>
+                            Remove<span class="govuk-visually-hidden"> @document.FileName</span>
+                        </button>
+                    </dd>
+                </div>
             }
-        </ul>
+        </dl>
     }
 
     <govuk-file-upload for="SupportingInformation"

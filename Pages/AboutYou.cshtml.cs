@@ -38,10 +38,11 @@ namespace Dfe.Unified.Intake.Pages
         [BindProperty]
         public IFormFileCollection? SupportingInformation { get; set; }
 
-        // Names of the documents already stored for this session, shown read-only. An HTML file input
-        // cannot be pre-populated, so listing the names is how a returning user sees what they have
+        // The documents already stored for this session, shown read-only with a Remove action. An HTML
+        // file input cannot be pre-populated, so listing them is how a returning user sees what they have
         // already uploaded.
-        public IReadOnlyList<string> UploadedFileNames { get; private set; } = Array.Empty<string>();
+        public IReadOnlyList<SupportingDocument> UploadedDocuments { get; private set; } =
+            Array.Empty<SupportingDocument>();
 
         // Constraints for "Supporting documentation". The improved file upload component cannot enforce
         // file count or size, so these are validated server-side; accept= only hints the file picker.
@@ -66,7 +67,7 @@ namespace Dfe.Unified.Intake.Pages
             EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session) ?? CurrentUserEmailAddress;
             RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session);
             CanContact = Session.GetAboutYouCanContact(HttpContext.Session);
-            LoadUploadedFileNames();
+            LoadUploadedDocuments();
         }
 
         // The application signs users in with their DfE account, so their details are carried on the
@@ -97,7 +98,7 @@ namespace Dfe.Unified.Intake.Pages
 
             if (!ModelState.IsValid)
             {
-                LoadUploadedFileNames();
+                LoadUploadedDocuments();
                 return Page();
             }
 
@@ -109,15 +110,38 @@ namespace Dfe.Unified.Intake.Pages
             return RedirectToPage(Links.CheckYourAnswers.PageName);
         }
 
+        // Removes a single previously uploaded document, then reloads the page (POST-redirect-GET). The
+        // Remove button uses formnovalidate so removing a file doesn't trip the page's other field
+        // validation; any details already entered are kept so the user doesn't lose their other answers.
+        public IActionResult OnPostRemove(string storedName)
+        {
+            PersistEnteredDetails();
+            SupportingDocuments.Remove(HttpContext.Session, storedName);
+
+            return RedirectToPage();
+        }
+
+        // Saves whatever has been entered in the form fields so far, without validating them. Only
+        // non-null values are written so an unfilled field doesn't overwrite a stored value with a blank.
+        private void PersistEnteredDetails()
+        {
+            if (FullName is not null)
+                Session.SetAboutYouFullName(HttpContext.Session, FullName);
+            if (EmailAddress is not null)
+                Session.SetAboutYouEmailAddress(HttpContext.Session, EmailAddress);
+            if (RequestDetails is not null)
+                Session.SetAboutYouRequestDetails(HttpContext.Session, RequestDetails);
+            if (CanContact is not null)
+                Session.SetAboutYouCanContact(HttpContext.Session, CanContact);
+        }
+
         // True unless the supplied files failed their own validation (extension, size or count). Used to
         // decide whether a selection is safe to store even when other fields on the page are invalid.
         private bool SupportingInformationIsValid =>
             !ModelState.TryGetValue(nameof(SupportingInformation), out var entry) || entry.Errors.Count == 0;
 
-        private void LoadUploadedFileNames() =>
-            UploadedFileNames = SupportingDocuments.GetAll(HttpContext.Session)
-                .Select(d => d.FileName)
-                .ToList();
+        private void LoadUploadedDocuments() =>
+            UploadedDocuments = SupportingDocuments.GetAll(HttpContext.Session);
 
         private void ValidateRequestDetailsLength()
         {

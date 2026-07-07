@@ -57,6 +57,19 @@ namespace Dfe.Unified.Intake.Pages.Helpers
             return new MemoryStream(bytes);
         }
 
+        // Removes a single stored document (identified by its opaque stored name), leaving the rest in
+        // place. No-op if the name is not among the stored documents.
+        public static void Remove(ISession session, string storedName)
+        {
+            var remaining = GetAll(session).Where(d => d.StoredFileName != storedName).ToList();
+            session.Remove(ContentKey(storedName));
+
+            if (remaining.Count == 0)
+                session.Remove(MetadataKey);
+            else
+                session.SetString(MetadataKey, JsonSerializer.Serialize(remaining));
+        }
+
         // Removes all stored files for this session and forgets their metadata.
         public static void Clear(ISession session)
         {

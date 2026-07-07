@@ -14,3 +14,15 @@
     margin-top: 0;
     margin-bottom: 45px;
 }
+
+/* Renders a submit button as a GOV.UK link, so a mutating action (e.g. "Remove" in a summary list)
+   can be a real button while looking like a link. Combine with govuk-link, which supplies the colour,
+   underline, hover and focus styles. */
+.app-link--button {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+}
