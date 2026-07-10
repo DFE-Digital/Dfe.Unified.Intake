@@ -47,7 +47,11 @@ namespace Dfe.Unified.Intake.Pages
         // Constraints for "Supporting documentation". The improved file upload component cannot enforce
         // file count or size, so these are validated server-side; accept= only hints the file picker.
         private const int MaxFileCount = 20;
-        private const long MaxFileSizeBytes = 25 * 1024 * 1024; // 25MB
+
+        // Per-file size cap, in megabytes. Capped at 25MB by the Power Automate backend the request is
+        // submitted to. Shared with the hint text in AboutYou.cshtml — update here to change it everywhere.
+        public const int MaxFileSizeMb = 25;
+        private const long MaxFileSizeBytes = MaxFileSizeMb * 1024L * 1024L;
 
         // The most a valid submission could weigh: every file at the maximum size and count, plus
         // headroom for multipart boundaries, part headers and the other form fields. Used by the
@@ -157,7 +161,7 @@ namespace Dfe.Unified.Intake.Pages
         }
 
         // Uploading supporting documentation is optional, but anything provided must satisfy the
-        // stated limits: up to 20 files, each no larger than 25MB, of an accepted file type.
+        // stated limits: up to 20 files, each no larger than 200MB, of an accepted file type.
         private void ValidateSupportingInformation()
         {
             if (SupportingInformation is not { Count: > 0 })
@@ -180,7 +184,7 @@ namespace Dfe.Unified.Intake.Pages
                 if (file.Length > MaxFileSizeBytes)
                     ModelState.AddModelError(
                         nameof(SupportingInformation),
-                        $"{file.FileName} must be no larger than 25MB");
+                        $"{file.FileName} must be no larger than {MaxFileSizeMb}MB");
             }
         }
     }

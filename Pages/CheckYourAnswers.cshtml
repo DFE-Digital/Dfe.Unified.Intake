@@ -93,5 +93,9 @@
 <h2 class="govuk-heading-m govuk-!-margin-top-6">Now send your request</h2>
 <p class="govuk-body">By submitting this request you are confirming that, to the best of your knowledge, the details you are providing are correct.</p>
 
-    <govuk-button>Submit request</govuk-button>
+    @* Submitting can take a while, so guard against a second submission: GOV.UK Frontend debounces
+       rapid double clicks via data-prevent-double-click, and site.js additionally disables the button
+       for the whole request. On a validation failure the page re-renders fresh, so the button is
+       enabled again with the error summary shown. *@
+    <govuk-button data-prevent-double-click="true">Submit request</govuk-button>
 </form>
