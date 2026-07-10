@@ -361,3 +361,16 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+## Terraform
+.terraformrc*
+terraform.rc*
+*.tfstate*
+*.tfvars*
+!terraform.tfvars.example
+.terraform/
+backend.vars
+
+## Homebrew
+/Brewfile.lock.json
+/terraform/Brewfile.lock.json
