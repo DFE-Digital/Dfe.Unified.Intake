@@ -1,4 +1,8 @@
 ﻿using GovUk.Frontend.AspNetCore;
+using GovUK.Dfe.ClamAV.Api.Client;
+using GovUK.Dfe.ClamAV.Api.Client.Contracts;
+using GovUK.Dfe.ClamAV.Api.Client.Extensions;
+using Dfe.Unified.Intake.Pages.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
@@ -32,6 +36,13 @@ namespace Dfe.Unified.Intake
 
             services.AddHttpContextAccessor();
 
+            // ClamAV virus scanning of supporting documents before they are submitted to Power Automate.
+            // The generated client authenticates with client credentials; its config (ClamAvApiClient
+            // section) is bound here, with the ClientSecret supplied out-of-band via user-secrets / Key
+            // Vault / environment variables rather than appsettings.
+            services.AddClamAvApiClient<IClamAvApiClient, ClamAvApiClient>(Configuration);
+            services.AddScoped<IVirusScanner, VirusScanner>();
+
             services.AddGovUkFrontend();
 
             // Sign users in with their DfE account (Azure AD) so the application can identify who is
@@ -60,7 +71,6 @@ namespace Dfe.Unified.Intake
             {
                 options.Conventions.AuthorizeFolder("/");
                 options.Conventions.AllowAnonymousToPage("/Error");
-                options.Conventions.AllowAnonymousToPage("/Privacy");
             });
         }
 

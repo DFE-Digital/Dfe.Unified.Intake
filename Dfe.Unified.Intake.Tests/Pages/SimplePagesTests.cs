@@ -8,14 +8,6 @@ namespace Dfe.Unified.Intake.Tests.Pages
     public class SimplePagesTests
     {
         [Test]
-        public void PrivacyModel_OnGet_does_not_throw()
-        {
-            var model = new PrivacyModel().WithContext();
-
-            Assert.DoesNotThrow(() => model.OnGet());
-        }
-
-        [Test]
         public void WeHaveReceivedYourRequestModel_OnGet_does_not_throw()
         {
             var model = new WeHaveReceivedYourRequestModel().WithContext();

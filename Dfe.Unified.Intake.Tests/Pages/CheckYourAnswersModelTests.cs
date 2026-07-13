@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using AutoFixture;
 using Dfe.Unified.Intake.Pages;
 using Dfe.Unified.Intake.Pages.Helpers;
@@ -199,19 +200,209 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.ThrowsAsync<InvalidOperationException>(() => model.OnPost());
         }
 
-        private CheckYourAnswersModel BuildModel(StubHttpMessageHandler handler, string? url = DefaultUrl)
+        [Test]
+        public async Task OnPost_blocks_submission_when_a_file_is_infected()
+        {
+            SeedAnswers();
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("virus.txt", "x") });
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler, scanner: ScannerReporting(ScanState.Infected));
+
+            var result = await model.OnPost();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.InstanceOf<PageResult>());
+                // The request was never sent to Power Automate.
+                Assert.That(handler.CapturedRequestBody, Is.Null);
+                Assert.That(Session.GetReferenceNumber(_session), Is.Null);
+                Assert.That(PageErrors.From(model.HttpContext), Has.Some.Contains("failed our virus check"));
+            });
+        }
+
+        [Test]
+        public async Task OnPost_skips_the_virus_check_when_the_feature_is_disabled()
+        {
+            SeedAnswers();
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("virus.txt", "x") });
+            var scanner = new Mock<IVirusScanner>();
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler, scanner: scanner.Object, scanningEnabled: false);
+
+            var result = await model.OnPost();
+
+            Assert.Multiple(() =>
+            {
+                // The file is submitted without being scanned at all.
+                Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
+                Assert.That(handler.CapturedRequestBody, Is.Not.Null);
+            });
+            scanner.VerifyNoOtherCalls();
+        }
+
+        [Test]
+        public async Task OnPostStartScan_is_not_found_when_the_feature_is_disabled()
+        {
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("a.txt", "hi") });
+            var model = BuildModel(
+                StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"), scanningEnabled: false);
+
+            var result = await model.OnPostStartScanAsync(CancellationToken.None);
+
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task OnGetScanStatus_is_not_found_when_the_feature_is_disabled()
+        {
+            var model = BuildModel(
+                StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"), scanningEnabled: false);
+
+            var result = await model.OnGetScanStatusAsync("job-1", CancellationToken.None);
+
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
+
+        [Test]
+        public async Task OnPost_blocks_submission_when_a_scan_cannot_be_completed()
+        {
+            SeedAnswers();
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("a.txt", "x") });
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler, scanner: ScannerReporting(ScanState.Error));
+
+            var result = await model.OnPost();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.InstanceOf<PageResult>());
+                Assert.That(handler.CapturedRequestBody, Is.Null);
+                Assert.That(PageErrors.From(model.HttpContext),
+                    Has.Some.Contains("could not confirm your files are safe"));
+            });
+        }
+
+        [Test]
+        public async Task OnPost_uses_supplied_clean_job_ids_without_rescanning()
+        {
+            SeedAnswers();
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("a.txt", "hi") });
+            var scanner = new Mock<IVirusScanner>();
+            scanner
+                .Setup(s => s.GetStatusAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ScanStatusResult(ScanState.Clean, null, null));
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler, scanner: scanner.Object);
+            // The client already scanned this file and supplied its clean job id.
+            model.ScanJobIds = "job-abc";
+
+            var result = await model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
+            // The fast path re-checks the job id rather than submitting the file again.
+            scanner.Verify(
+                s => s.SubmitAsync(
+                    It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Test]
+        public async Task OnPostStartScan_returns_a_job_id_per_uploaded_file()
+        {
+            await SupportingDocuments.SaveAsync(
+                _session, new FormFileCollection { MakeFile("a.txt", "hi"), MakeFile("b.txt", "yo") });
+            var scanner = new Mock<IVirusScanner>();
+            scanner
+                .Setup(s => s.SubmitAsync(
+                    It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync("job-xyz");
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"), scanner: scanner.Object);
+
+            var result = await model.OnPostStartScanAsync(CancellationToken.None);
+
+            var files = JsonElementOf(result).GetProperty("files");
+            Assert.That(files.GetArrayLength(), Is.EqualTo(2));
+            Assert.That(files[0].GetProperty("jobId").GetString(), Is.EqualTo("job-xyz"));
+            Assert.That(files[0].GetProperty("fileName").GetString(), Is.EqualTo("a.txt"));
+        }
+
+        [Test]
+        public async Task OnGetScanStatus_reports_the_status_as_a_lowercase_string()
+        {
+            var scanner = new Mock<IVirusScanner>();
+            scanner
+                .Setup(s => s.GetStatusAsync("job-1", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ScanStatusResult(ScanState.Infected, "Eicar-Test-Signature", null));
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"), scanner: scanner.Object);
+
+            var result = await model.OnGetScanStatusAsync("job-1", CancellationToken.None);
+
+            var root = JsonElementOf(result);
+            Assert.Multiple(() =>
+            {
+                Assert.That(root.GetProperty("status").GetString(), Is.EqualTo("infected"));
+                Assert.That(root.GetProperty("malware").GetString(), Is.EqualTo("Eicar-Test-Signature"));
+            });
+        }
+
+        [Test]
+        public async Task OnGetScanStatus_returns_bad_request_when_no_job_id_is_given()
+        {
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"));
+
+            var result = await model.OnGetScanStatusAsync("", CancellationToken.None);
+
+            Assert.That(result, Is.InstanceOf<BadRequestResult>());
+        }
+
+        // Serializes the anonymous payload of a JsonResult so its properties can be asserted on.
+        private static JsonElement JsonElementOf(IActionResult result)
+        {
+            var value = ((JsonResult)result).Value;
+            return JsonSerializer.SerializeToDocument(value).RootElement;
+        }
+
+        private CheckYourAnswersModel BuildModel(
+            StubHttpMessageHandler handler,
+            string? url = DefaultUrl,
+            IVirusScanner? scanner = null,
+            bool scanningEnabled = true)
         {
             var httpClient = new HttpClient(handler);
 
             var factory = new Mock<IHttpClientFactory>();
             factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
 
-            var configuration = new Mock<IConfiguration>();
-            configuration.Setup(c => c[It.IsAny<string>()]).Returns(url);
+            // Poll interval 0 keeps the synchronous re-scan fallback instant in tests.
+            var settings = new Dictionary<string, string?>
+            {
+                ["ClamAv:IsEnabled"] = scanningEnabled ? "true" : "false",
+                ["ClamAv:PollIntervalSeconds"] = "0",
+                ["ClamAv:MaxPollAttempts"] = "3"
+            };
+            if (url is not null)
+                settings["PowerAutomateUrl"] = url;
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
 
             return new CheckYourAnswersModel(
-                    NullLogger<CheckYourAnswersModel>.Instance, factory.Object, configuration.Object)
+                    NullLogger<CheckYourAnswersModel>.Instance, factory.Object, scanner ?? CleanScanner(), configuration)
                 .WithContext(_session);
+        }
+
+        // A scanner that reports every file clean, so tests that are not about the virus gate can ignore it.
+        private static IVirusScanner CleanScanner() => ScannerReporting(ScanState.Clean);
+
+        private static IVirusScanner ScannerReporting(ScanState state)
+        {
+            var scanner = new Mock<IVirusScanner>();
+            scanner
+                .Setup(s => s.SubmitAsync(
+                    It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync("job-1");
+            scanner
+                .Setup(s => s.GetStatusAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ScanStatusResult(state, null, null));
+            return scanner.Object;
         }
 
         private void SeedAnswers()

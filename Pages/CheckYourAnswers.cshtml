@@ -93,9 +93,49 @@
 <h2 class="govuk-heading-m govuk-!-margin-top-6">Now send your request</h2>
 <p class="govuk-body">By submitting this request you are confirming that, to the best of your knowledge, the details you are providing are correct.</p>
 
+    @* Virus scan progress. Only rendered when the ClamAv:IsEnabled feature flag is on. Hidden until
+       JavaScript starts the scans on submit; each row is updated in place as ClamAV reports its status.
+       Kept inside the form so the confirmed job ids post with the request. With JavaScript off this stays
+       hidden and the server scans the files synchronously instead. role="status"/aria-live announces
+       status changes to assistive technology. *@
+    @if (Model.IsScanningEnabled && Model.SupportingDocumentsList.Count > 0)
+    {
+        <div id="virus-scan-status"
+             class="govuk-!-margin-bottom-6"
+             role="status"
+             aria-live="polite"
+             data-poll-interval="@Model.PollIntervalSeconds"
+             data-max-attempts="@Model.MaxPollAttempts"
+             data-start-url="@Url.Page("/CheckYourAnswers", "StartScan")"
+             data-status-url="@Url.Page("/CheckYourAnswers", "ScanStatus")"
+             hidden>
+            <h2 class="govuk-heading-m">Checking your files for viruses</h2>
+            <dl class="govuk-summary-list">
+                @foreach (var document in Model.SupportingDocumentsList)
+                {
+                    <div class="govuk-summary-list__row" data-stored-name="@document.StoredFileName">
+                        <dt class="govuk-summary-list__key govuk-!-font-weight-regular">@document.FileName</dt>
+                        <dd class="govuk-summary-list__value">
+                            <strong class="govuk-tag govuk-tag--grey" data-scan-tag>Waiting</strong>
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+
+        <input type="hidden" asp-for="ScanJobIds" />
+    }
+
     @* Submitting can take a while, so guard against a second submission: GOV.UK Frontend debounces
        rapid double clicks via data-prevent-double-click, and site.js additionally disables the button
        for the whole request. On a validation failure the page re-renders fresh, so the button is
        enabled again with the error summary shown. *@
     <govuk-button data-prevent-double-click="true">Submit request</govuk-button>
 </form>
+
+@section Scripts {
+    @if (Model.IsScanningEnabled)
+    {
+        <script src="~/js/clamav-scan.js" asp-append-version="true"></script>
+    }
+}
