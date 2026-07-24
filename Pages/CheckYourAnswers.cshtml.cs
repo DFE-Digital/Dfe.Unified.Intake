@@ -108,8 +108,9 @@ namespace Dfe.Unified.Intake.Pages
             foreach (var document in documents)
             {
                 await using var contents = SupportingDocuments.OpenRead(HttpContext.Session, document);
-                var jobId = await _scanner.SubmitAsync(
-                    document.FileName, document.ContentType, contents, cancellationToken);
+
+                var jobId = await _scanner.SubmitAsync(document.FileName, document.ContentType, contents, cancellationToken);
+
                 files.Add(new { storedName = document.StoredFileName, fileName = document.FileName, jobId });
             }
 
@@ -165,6 +166,7 @@ namespace Dfe.Unified.Intake.Pages
                 return null;
 
             _logger.LogWarning("Submission blocked by virus gate: {Gate}.", gate);
+
             return SubmissionError(GateMessage(gate));
         }
 
