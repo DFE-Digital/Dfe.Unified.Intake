@@ -4,12 +4,28 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>251e3c8b-7861-4477-95e5-e051c13e9830</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="GovUk.Frontend.AspNetCore" Version="4.1.1" />
+    <PackageReference Include="GovUK.Dfe.ClamAV.Api.Client" Version="0.1.1" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.7.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.7.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Images\" />
+  </ItemGroup>
+
+  <!-- The test project lives in a subfolder; keep its sources out of this web project's default globbing. -->
+  <ItemGroup>
+    <Compile Remove="Dfe.Unified.Intake.Tests\**" />
+    <Content Remove="Dfe.Unified.Intake.Tests\**" />
+    <None Remove="Dfe.Unified.Intake.Tests\**" />
+    <EmbeddedResource Remove="Dfe.Unified.Intake.Tests\**" />
   </ItemGroup>
 
 </Project>

@@ -6,7 +6,7 @@
 
 @section BeforeMain
 {
-    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/TellUsWhatYouNeed">Back</a>
+    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/Index">Back</a>
 }
 
 <h1 class="govuk-heading-l">About you</h1>
@@ -21,7 +21,7 @@
         <govuk-input-hint>We'll use this to send updates about your request</govuk-input-hint>
     </govuk-input>
 
-    <govuk-character-count for="RequestDetails" max-length="1000">
+    <govuk-character-count for="RequestDetails" max-length="@AboutYouModel.MaxRequestDetailsLength">
         <govuk-character-count-label class="govuk-label--s">Request details</govuk-character-count-label>
         <govuk-character-count-hint>Describe your request. Include what you were trying to do, what happened, and any other relevant information.</govuk-character-count-hint>
     </govuk-character-count>
@@ -45,9 +45,32 @@
     </govuk-warning-text>
 
     <h3 class="govuk-heading-s">Upload your documents</h3>
-    <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than 25MB.</p>
+    <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than @(AboutYouModel.MaxFileSizeMb)MB.</p>
 
-    <govuk-file-upload for="SupportingInformation" multiple="true">
+    @if (Model.UploadedDocuments.Count > 0)
+    {
+        <h3 class="govuk-heading-s">Files added</h3>
+        <dl class="govuk-summary-list govuk-!-margin-bottom-6">
+            @foreach (var document in Model.UploadedDocuments)
+            {
+                <div class="govuk-summary-list__row">
+                    <dd class="govuk-summary-list__value">@document.FileName</dd>
+                    <dd class="govuk-summary-list__actions">
+                        <button type="submit" asp-page-handler="Remove"
+                                name="storedName" value="@document.StoredFileName"
+                                class="govuk-link app-link--button" formnovalidate>
+                            Remove<span class="govuk-visually-hidden"> @document.FileName</span>
+                        </button>
+                    </dd>
+                </div>
+            }
+        </dl>
+    }
+
+    <govuk-file-upload for="SupportingInformation"
+                       multiple="true"
+                       javascript-enhancements="true"
+                       accept=".png,.jpg,.jpeg,.pdf,.docx,.xlsx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
         <govuk-file-upload-label class="govuk-visually-hidden">Upload your documents</govuk-file-upload-label>
     </govuk-file-upload>
 

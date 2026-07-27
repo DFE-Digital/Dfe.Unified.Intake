@@ -11,7 +11,6 @@ namespace Dfe.Unified.Intake.Pages.Helpers
         private const string AboutYouEmailAddressKey = "AboutYou_EmailAddress";
         private const string AboutYouRequestDetailsKey = "AboutYou_RequestDetails";
         private const string AboutYouCanContactKey = "AboutYou_CanContact";
-        private const string AboutYouSupportingInformationFileNameKey = "AboutYou_SupportingInformationFileName";
 
         public static void Reset(ISession session)
         {
@@ -21,7 +20,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
             session.Remove(AboutYouEmailAddressKey);
             session.Remove(AboutYouRequestDetailsKey);
             session.Remove(AboutYouCanContactKey);
-            session.Remove(AboutYouSupportingInformationFileNameKey);
+            SupportingDocuments.Clear(session);
             session.Remove(ReferenceNumberKey);
         }
 
@@ -64,12 +63,6 @@ namespace Dfe.Unified.Intake.Pages.Helpers
 
         public static string? GetAboutYouCanContact(ISession session) =>
             session.GetString(AboutYouCanContactKey);
-
-        public static void SetAboutYouSupportingInformationFileName(ISession session, string value) =>
-            session.SetString(AboutYouSupportingInformationFileNameKey, value);
-
-        public static string? GetAboutYouSupportingInformationFileName(ISession session) =>
-            session.GetString(AboutYouSupportingInformationFileNameKey);
 
         // ReferenceNumber
 
