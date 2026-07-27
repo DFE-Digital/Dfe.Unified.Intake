@@ -1,8 +1,9 @@
 namespace Dfe.Unified.Intake.Pages.Models
 {
-    // The payload sent to the third-party backend (Power Automate) when a request is submitted.
-    // Shape mirrors docs/power-automate-request.json. Note the reference number is NOT part of the
-    // request — the server returns it in the response (see SubmissionResponse).
+    /// <summary>
+    /// The payload sent to Power Automate when a request is submitted.
+    /// Shape mirrors docs/power-automate-request.json. Note the reference number is NOT part of the request — the server returns it in the response (see SubmissionResponse).
+    /// </summary>
     public sealed record SubmissionRequest
     {
         public required string? RequestType { get; init; }
@@ -19,8 +20,8 @@ namespace Dfe.Unified.Intake.Pages.Models
     // A supporting document included in the submission. Content is the base64-encoded file bytes.
     public sealed record SubmissionAttachment(string FileName, string? ContentType, string Content);
 
-    // The response returned by the backend. The reference number is generated server-side (a numeric
-    // work item identifier) and returned here. Shape mirrors docs/power-automate-success-response.json.
+    // The response returned by the backend. The reference number is generated server-side (a numeric work item identifier) and returned here.
+    // Shape mirrors docs/power-automate-success-response.json.
     public sealed record SubmissionResponse
     {
         public bool Success { get; init; }

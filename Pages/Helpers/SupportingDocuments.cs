@@ -3,11 +3,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Dfe.Unified.Intake.Pages.Helpers
 {
-    // Persists uploaded supporting documents in the session so their contents are still available when
-    // the request is finally submitted on the Check your answers page. The browser discards the file
-    // input after each POST, so without this the bytes would be lost between pages. The metadata (file
-    // names etc.) is held under one key and each file's contents under its own key, so listing the
-    // documents does not need to load the binaries.
+    /// <summary>
+    /// Persists uploaded supporting documents in the session so their contents are still available when
+    /// the request is finally submitted on the Check your answers page. The browser discards the file
+    /// </summary>
     public static class SupportingDocuments
     {
         private const string MetadataKey = "AboutYou_SupportingDocuments";
@@ -23,8 +22,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
             var documents = new List<SupportingDocument>();
             foreach (var file in files)
             {
-                // Store the contents under an opaque key, keeping the (untrusted) original file name as
-                // display metadata only.
+                // Store the contents under an opaque key, keeping the (untrusted) original file name as display metadata only.
                 var storedFileName = Guid.NewGuid().ToString("N");
 
                 using var buffer = new MemoryStream();
@@ -57,8 +55,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
             return new MemoryStream(bytes);
         }
 
-        // Removes a single stored document (identified by its opaque stored name), leaving the rest in
-        // place. No-op if the name is not among the stored documents.
+        // Removes a single stored document (identified by its opaque stored name), leaving the rest in place.
         public static void Remove(ISession session, string storedName)
         {
             var remaining = GetAll(session).Where(d => d.StoredFileName != storedName).ToList();

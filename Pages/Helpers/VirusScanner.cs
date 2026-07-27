@@ -20,8 +20,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
         public static bool IsPending(this ScanState state) =>
             state is ScanState.Queued or ScanState.Downloading or ScanState.Scanning;
 
-        // Maps the raw status string from the API onto ScanState. Anything unrecognised is treated as
-        // Error so an unexpected value can never be mistaken for Clean and let a file through.
+        // Maps the raw status string from the API onto ScanState.
         public static ScanState ParseScanState(string? status) => status?.Trim().ToLowerInvariant() switch
         {
             "queued" => ScanState.Queued,
@@ -36,9 +35,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
     // The outcome of polling a single scan job.
     public sealed record ScanStatusResult(ScanState State, string? Malware, string? Error);
 
-    // Wraps the generated ClamAV API client with the two operations the intake journey needs: submit a
-    // file for asynchronous scanning, and poll a job's status. Keeping this behind an interface lets the
-    // page handlers and tests work against a small, intention-revealing surface.
+    // Wraps the generated ClamAV API client with the two operations the intake journey needs
     public interface IVirusScanner
     {
         // Submits a file for asynchronous scanning and returns the job id to poll.

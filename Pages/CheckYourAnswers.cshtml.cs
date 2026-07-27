@@ -1,9 +1,10 @@
-using System.Text.Json;
-using GovUk.Frontend.AspNetCore;
 using Dfe.Unified.Intake.Pages.Helpers;
 using Dfe.Unified.Intake.Pages.Models;
+using GovUk.Frontend.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Text.Json;
+using System.Timers;
 
 namespace Dfe.Unified.Intake.Pages
 {
@@ -42,19 +43,19 @@ namespace Dfe.Unified.Intake.Pages
         }
 
         // Feature flag (ClamAv:IsEnabled). When false, virus scanning is skipped entirely: no scan is run
-        // on submission and the status widget is not shown. Defaults to false.
         public bool IsScanningEnabled { get; }
 
-        // How often the browser should poll each file's scan status, in seconds. Surfaced to the view so
-        // the client-side polling loop and the server share a single configured value.
+        // How often the browser should poll each file's scan status, in seconds
         public int PollIntervalSeconds { get; }
 
-        // How many times to poll before giving up on a scan. Shared by the client and the server fallback.
+        // How many times to poll before giving up on a scan.Shared by the client and the server fallback.
         public int MaxPollAttempts { get; }
 
-        // Populated by JavaScript once every file has been scanned clean: a comma-separated list of the
-        // ClamAV job ids. The final POST re-verifies these server-side before anything is sent on, so a
-        // tampered or absent value simply triggers an authoritative re-scan rather than bypassing the gate.
+        /// <summary>
+        /// Populated by JavaScript once every file has been scanned clean: a comma-separated list of the
+        /// ClamAV job ids. The final POST re-verifies these server-side before anything is sent on, so a
+        /// tampered or absent value simply triggers an authoritative re-scan rather than bypassing the gate.
+        /// </summary>
         [BindProperty]
         public string? ScanJobIds { get; set; }
 
@@ -93,10 +94,11 @@ namespace Dfe.Unified.Intake.Pages
             CanContact = FormatValue(Session.GetAboutYouCanContact(HttpContext.Session));
         }
 
-        // AJAX handler: submits every supporting document held in the session to ClamAV for asynchronous
-        // scanning and returns the resulting job ids for the browser to poll. The files are read from the
-        // server-side session, never re-uploaded by the browser, so the bytes that get scanned are exactly
-        // the bytes that will be submitted.
+        /// <summary>
+        /// AJAX handler: submits every supporting document held in the session to ClamAV for asynchronous
+        /// scanning and returns the resulting job ids for the browser to poll. The files are read from the
+        /// server-side session, never re-uploaded by the browser, so the bytes that get scanned are exactly the bytes that will be submitted.
+        /// </summary>
         public async Task<IActionResult> OnPostStartScanAsync(CancellationToken cancellationToken)
         {
             if (!IsScanningEnabled)
@@ -117,9 +119,10 @@ namespace Dfe.Unified.Intake.Pages
             return new JsonResult(new { files });
         }
 
-        // AJAX handler: reports the current status of a single scan job so the browser can update its
-        // progress display. Status values match the API (queued, downloading, scanning, clean, infected,
-        // error).
+        /// <summary>
+        /// AJAX handler: reports the current status of a single scan job so the browser can update its
+        /// progress display. Status values match the API (queued, downloading, scanning, clean, infected, error).
+        /// </summary>
         public async Task<IActionResult> OnGetScanStatusAsync(string jobId, CancellationToken cancellationToken)
         {
             if (!IsScanningEnabled)
@@ -141,8 +144,7 @@ namespace Dfe.Unified.Intake.Pages
         {
             var documents = SupportingDocuments.GetAll(HttpContext.Session);
 
-            // Virus scanning is behind the ClamAv:IsEnabled feature flag; when off it is skipped entirely.
-            if (IsScanningEnabled)
+            if (IsScanningEnabled) // Virus scanning is behind the ClamAv:IsEnabled feature flag; when off it is skipped entirely.
             {
                 var blocked = await RunVirusGateAsync(documents, cancellationToken);
                 if (blocked is not null)
@@ -170,8 +172,10 @@ namespace Dfe.Unified.Intake.Pages
             return SubmissionError(GateMessage(gate));
         }
 
-        // Builds the payload submitted to the backend from the current session. Shape mirrors
-        // docs/power-automate-request.json; each supporting document is read and base64-encoded inline.
+        /// <summary>
+        /// Builds the payload submitted to the backend from the current session. Shape mirrors
+        /// docs/power-automate-request.json; each supporting document is read and base64-encoded inline.
+        /// </summary>
         private async Task<SubmissionRequest> BuildSubmissionRequestAsync(
             IReadOnlyList<SupportingDocument> documents)
         {
@@ -219,11 +223,11 @@ namespace Dfe.Unified.Intake.Pages
                     SerializerOptions));
         }
 
-        // Submits the request to Power Automate; the reference number comes back in the response (see
-        // docs/power-automate-success-response.json). Transport-level failures (network error, non-success
-        // status code, malformed response) and application failures are both surfaced as an error page
-        // rather than bubbling up to the error page. On success the reference number is stored and the user
-        // is redirected to the confirmation page.
+        /// <summary>
+        /// Submits the request to Power Automate; the reference number comes back in the response (see docs/power-automate-success-response.json).
+        /// Transport-level failures (network error, non-success status code, malformed response) and application failures are both surfaced as an error page.
+        /// On success the reference number is stored and the user is redirected to the confirmation page.
+        /// </summary>
         private async Task<IActionResult> SubmitToPowerAutomateAsync(SubmissionRequest request)
         {
             if (string.IsNullOrWhiteSpace(_powerAutomateUrl))
@@ -256,9 +260,7 @@ namespace Dfe.Unified.Intake.Pages
 
         private enum ScanGate { Clean, Infected, Failed }
 
-        // Confirms every supporting document is virus-free before submission. Prefers the fast path of
-        // re-checking the job ids the browser already scanned; if that cannot be trusted (no ids, wrong
-        // count, still pending, or an API error) it falls back to scanning the files from scratch here.
+        // Confirms every supporting document is virus-free before submission.
         private async Task<ScanGate> EnsureFilesAreCleanAsync(
             IReadOnlyList<SupportingDocument> documents, CancellationToken cancellationToken)
         {
@@ -272,20 +274,20 @@ namespace Dfe.Unified.Intake.Pages
                 var results = await Task.WhenAll(
                     jobIds.Select(id => _scanner.GetStatusAsync(id, cancellationToken)));
 
-                // A clean fast path is conclusive; an infected one blocks immediately. Anything else
-                // (still pending, or an API error) drops through to an authoritative re-scan below.
-                if (results.Any(r => r.State == ScanState.Infected))
+                if (results.Any(r => r.State == ScanState.Infected)) // an infected one blocks immediately
                     return ScanGate.Infected;
-                if (results.All(r => r.State == ScanState.Clean))
+
+                if (results.All(r => r.State == ScanState.Clean)) // A clean fast path is conclusive
                     return ScanGate.Clean;
+
+                
             }
 
+            // Anything else (still pending, or an API error) drops through to an authoritative re-scan
             return await RescanAsync(documents, cancellationToken);
         }
 
         // Submits every document afresh and polls until all are clean, one is infected, or we give up.
-        // This is the authoritative gate used when the client did not supply a trustworthy set of clean
-        // job ids (e.g. JavaScript disabled, or the earlier scan was tampered with).
         private async Task<ScanGate> RescanAsync(
             IReadOnlyList<SupportingDocument> documents, CancellationToken cancellationToken)
         {
@@ -304,8 +306,10 @@ namespace Dfe.Unified.Intake.Pages
 
                 if (results.Any(r => r.State == ScanState.Infected))
                     return ScanGate.Infected;
+
                 if (results.All(r => r.State == ScanState.Clean))
                     return ScanGate.Clean;
+
                 if (results.Any(r => r.State == ScanState.Error))
                     return ScanGate.Failed; // a hard error — no point waiting any longer
 
@@ -325,14 +329,13 @@ namespace Dfe.Unified.Intake.Pages
                 "We could not confirm your files are safe to submit. Please try again."
         };
 
-        // Re-renders Check your answers with an error summary at the top so the user can try again.
-        // The GOV.UK error summary reads from the page error context (populated by field tag helpers
-        // or AddPageError) rather than ModelState, so a plain ModelState error would not appear here —
-        // this page has no bound field to surface it. href is null: the error is not tied to a field.
+        // Re-renders Check your answers with an error summary at the top so the user can try again with GOV.UK error summary
         private IActionResult SubmissionError(string message)
         {
             HttpContext.AddPageError(message, href: null);
+
             PopulateAnswers();
+
             return Page();
         }
 
@@ -340,7 +343,7 @@ namespace Dfe.Unified.Intake.Pages
         private static bool ParseCanContact(string? value) =>
             string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
 
-        // The backend expects contactPermission as a "yes"/"no" string, not a boolean.
+        // Power automate expects contactPermission as a "yes"/"no" string, not a boolean.
         private static string ToYesNo(bool value) => value ? "Yes" : "No";
 
         private static string? FormatServiceValue(string? value) =>

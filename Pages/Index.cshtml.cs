@@ -16,21 +16,17 @@ namespace Dfe.Unified.Intake.Pages
         [Required(ErrorMessage = "Select what your request is about")]
         public string? RequestType { get; set; }
 
-        // Carried through from the footer "Create a request" so a start-over can keep the service lock.
         [BindProperty]
         public string? ServiceCode { get; set; }
 
-        // Valid service codes, matching the "Which service is your request for?" dropdown values.
         private static readonly string[] ValidServiceCodes =
-            { "MSI", "Prepare", "Complete", "FAST", "RECAST", "MFSP" };
+            { "EAT", "VCC", "REEP", "MSI", "Prepare", "Complete", "FAST", "RECAST", "MFSP" };
 
         public void OnGet(string? serviceCode)
         {
             Service = Session.GetTellUsWhatYouNeedService(HttpContext.Session);
             RequestType = Session.GetTellUsWhatYouNeed(HttpContext.Session);
 
-            // The session value takes precedence; the serviceCode query string is only a fallback
-            // pre-selection when nothing has been chosen yet. The user can always change it.
             if (string.IsNullOrWhiteSpace(Service) && !string.IsNullOrWhiteSpace(serviceCode))
             {
                 Service = ValidServiceCodes.FirstOrDefault(
@@ -49,7 +45,6 @@ namespace Dfe.Unified.Intake.Pages
             return RedirectToPage(Links.AboutYou.PageName);
         }
 
-        // Footer "Create a request" — start over: reset the session and return to this page.
         public IActionResult OnPostCreateRequest()
         {
             Session.Reset(HttpContext.Session);

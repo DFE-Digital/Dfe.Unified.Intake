@@ -7,9 +7,7 @@ using System.Security.Claims;
 
 namespace Dfe.Unified.Intake.Pages
 {
-    // Allow the supporting documentation upload through the default Kestrel body-size and multipart
-    // limits. The cap is derived from the per-file rules below, with a little headroom for boundaries
-    // and other form fields.
+    // Allow the supporting documentation upload through the default Kestrel body-size and multipart limits
     [RequestSizeLimit(MaxUploadRequestBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadRequestBytes)]
     public class AboutYouModel : PageModel
@@ -23,8 +21,6 @@ namespace Dfe.Unified.Intake.Pages
         [EmailAddress(ErrorMessage = "Enter a valid email address")]
         public string? EmailAddress { get; set; }
 
-        // Single source of truth for the request-details limit, shared with the character-count
-        // component in AboutYou.cshtml. Update here to change it everywhere.
         public const int MaxRequestDetailsLength = 2000;
 
         [BindProperty]
@@ -38,25 +34,15 @@ namespace Dfe.Unified.Intake.Pages
         [BindProperty]
         public IFormFileCollection? SupportingInformation { get; set; }
 
-        // The documents already stored for this session, shown read-only with a Remove action. An HTML
-        // file input cannot be pre-populated, so listing them is how a returning user sees what they have
-        // already uploaded.
         public IReadOnlyList<SupportingDocument> UploadedDocuments { get; private set; } =
             Array.Empty<SupportingDocument>();
 
-        // Constraints for "Supporting documentation". The improved file upload component cannot enforce
-        // file count or size, so these are validated server-side; accept= only hints the file picker.
         private const int MaxFileCount = 20;
 
-        // Per-file size cap, in megabytes. Capped at 25MB by the Power Automate backend the request is
-        // submitted to. Shared with the hint text in AboutYou.cshtml — update here to change it everywhere.
+        // Per-file size cap, in megabytes. Capped at 25MB by the Power Automate backend
         public const int MaxFileSizeMb = 25;
         private const long MaxFileSizeBytes = MaxFileSizeMb * 1024L * 1024L;
 
-        // The most a valid submission could weigh: every file at the maximum size and count, plus
-        // headroom for multipart boundaries, part headers and the other form fields. Used by the
-        // request-size attributes so a within-rules upload reaches server-side validation rather than
-        // being rejected by the framework first.
         private const long MaxUploadRequestHeadroomBytes = 10 * 1024 * 1024; // 10MB
         private const long MaxUploadRequestBytes = MaxFileCount * MaxFileSizeBytes + MaxUploadRequestHeadroomBytes;
 
@@ -65,19 +51,15 @@ namespace Dfe.Unified.Intake.Pages
 
         public void OnGet()
         {
-            // Anything the user has already entered on this page takes precedence. Otherwise, fall back
-            // to the signed-in user's details so a first visit arrives pre-filled with their name and email.
+            // Prefills the form with the user 's DfE account details, or whatever was previously entered in the session if they returned to the page
             FullName = Session.GetAboutYouFullName(HttpContext.Session) ?? CurrentUserFullName;
             EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session) ?? CurrentUserEmailAddress;
             RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session);
             CanContact = Session.GetAboutYouCanContact(HttpContext.Session);
+
             LoadUploadedDocuments();
         }
 
-        // The application signs users in with their DfE account, so their details are carried on the
-        // identity as claims. Azure AD issues the display name in the "name" claim and the email address
-        // in the "preferred_username" claim (which is what the identity name maps to, so we read the
-        // claims directly to keep the two values distinct).
         private string? CurrentUserFullName =>
             User.FindFirst("name")?.Value
             ?? User.FindFirst(ClaimTypes.GivenName)?.Value;
@@ -92,11 +74,6 @@ namespace Dfe.Unified.Intake.Pages
             ValidateRequestDetailsLength();
             ValidateSupportingInformation();
 
-            // Persist the file contents (not just their names) as soon as the files themselves are valid,
-            // before the model-state gate below. The browser discards the file input on every POST, so
-            // saving here means a valid selection survives — and stays listed under "Files added" — even
-            // when another field on the page is invalid. If the input is empty (nothing re-selected) we
-            // keep whatever was already stored; files are only replaced by a fresh, valid selection.
             if (SupportingInformation is { Count: > 0 } && SupportingInformationIsValid)
                 await SupportingDocuments.SaveAsync(HttpContext.Session, SupportingInformation);
 
@@ -114,9 +91,7 @@ namespace Dfe.Unified.Intake.Pages
             return RedirectToPage(Links.CheckYourAnswers.PageName);
         }
 
-        // Removes a single previously uploaded document, then reloads the page (POST-redirect-GET). The
-        // Remove button uses formnovalidate so removing a file doesn't trip the page's other field
-        // validation; any details already entered are kept so the user doesn't lose their other answers.
+        // Removes a single previously uploaded document, then reloads the page (POST-redirect-GET).
         public IActionResult OnPostRemove(string storedName)
         {
             PersistEnteredDetails();
@@ -125,8 +100,7 @@ namespace Dfe.Unified.Intake.Pages
             return RedirectToPage();
         }
 
-        // Saves whatever has been entered in the form fields so far, without validating them. Only
-        // non-null values are written so an unfilled field doesn't overwrite a stored value with a blank.
+        // Saves whatever has been entered in the form fields so far, without validating them
         private void PersistEnteredDetails()
         {
             if (FullName is not null)
@@ -139,8 +113,10 @@ namespace Dfe.Unified.Intake.Pages
                 Session.SetAboutYouCanContact(HttpContext.Session, CanContact);
         }
 
-        // True unless the supplied files failed their own validation (extension, size or count). Used to
-        // decide whether a selection is safe to store even when other fields on the page are invalid.
+        /// <summary>
+        /// True unless the supplied files failed their own validation (extension, size or count). Used to
+        /// decide whether a selection is safe to store even when other fields on the page are invalid.
+        /// </summary>
         private bool SupportingInformationIsValid =>
             !ModelState.TryGetValue(nameof(SupportingInformation), out var entry) || entry.Errors.Count == 0;
 
@@ -160,8 +136,10 @@ namespace Dfe.Unified.Intake.Pages
                     $"Request details must be {MaxRequestDetailsLength} characters or less");
         }
 
-        // Uploading supporting documentation is optional, but anything provided must satisfy the
-        // stated limits: up to 20 files, each no larger than 200MB, of an accepted file type.
+        /// <summary>
+        /// Uploading supporting documentation is optional, but anything provided must satisfy the
+        /// stated limits: up to 20 files, each no larger than 200MB, of an accepted file type.
+        /// </summary>
         private void ValidateSupportingInformation()
         {
             if (SupportingInformation is not { Count: > 0 })

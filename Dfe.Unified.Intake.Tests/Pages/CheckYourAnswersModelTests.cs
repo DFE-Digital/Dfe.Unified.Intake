@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 using AutoFixture;
 using Dfe.Unified.Intake.Pages;
 using Dfe.Unified.Intake.Pages.Helpers;
