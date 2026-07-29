@@ -1,10 +1,11 @@
-﻿using GovUk.Frontend.AspNetCore;
+﻿using Dfe.Unified.Intake.Pages.Helpers;
+using GovUk.Frontend.AspNetCore;
 using GovUK.Dfe.ClamAV.Api.Client;
 using GovUK.Dfe.ClamAV.Api.Client.Contracts;
 using GovUK.Dfe.ClamAV.Api.Client.Extensions;
-using Dfe.Unified.Intake.Pages.Helpers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using System.Diagnostics.CodeAnalysis;
@@ -73,6 +74,16 @@ namespace Dfe.Unified.Intake
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
+            // Ensure we do not lose X-Forwarded-* Headers when behind a Proxy
+            var forwardOptions = new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.All,
+                RequireHeaderSymmetry = false
+            };
+            forwardOptions.KnownNetworks.Clear();
+            forwardOptions.KnownProxies.Clear();
+            app.UseForwardedHeaders(forwardOptions);
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
