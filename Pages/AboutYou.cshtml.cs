@@ -170,7 +170,9 @@ namespace Dfe.Unified.Intake.Pages
             if (SupportingInformation is not { Count: > 0 })
                 return;
 
-            if (SupportingInformation.Count > MaxFileCount)
+            // Newly selected files are added to any already stored, so the combined total is what must fit the limit.
+            var alreadyStored = SupportingDocuments.GetAll(HttpContext.Session).Count;
+            if (alreadyStored + SupportingInformation.Count > MaxFileCount)
                 ModelState.AddModelError(
                     nameof(SupportingInformation),
                     $"You can upload up to {MaxFileCount} files");
