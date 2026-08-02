@@ -164,7 +164,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
         {
             var model = new AboutYouModel().WithContext(_session);
             model.FullName = "Jane Smith";
-            model.EmailAddress = "jane@example.com";
+            model.EmailAddress = "jane@education.gov.uk";
             model.RequestDetails = "Please help";
             model.CanContact = "no";
 
@@ -175,7 +175,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.Multiple(() =>
             {
                 Assert.That(Session.GetAboutYouFullName(_session), Is.EqualTo("Jane Smith"));
-                Assert.That(Session.GetAboutYouEmailAddress(_session), Is.EqualTo("jane@example.com"));
+                Assert.That(Session.GetAboutYouEmailAddress(_session), Is.EqualTo("jane@education.gov.uk"));
                 Assert.That(Session.GetAboutYouRequestDetails(_session), Is.EqualTo("Please help"));
                 Assert.That(Session.GetAboutYouCanContact(_session), Is.EqualTo("no"));
             });
@@ -186,7 +186,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
         {
             var model = new AboutYouModel().WithContext(_session);
             model.FullName = "Jane";
-            model.EmailAddress = "jane@example.com";
+            model.EmailAddress = "jane@education.gov.uk";
             model.RequestDetails = "Details";
             model.CanContact = "yes";
             model.SupportingInformation = new FormFileCollection
@@ -355,10 +355,39 @@ namespace Dfe.Unified.Intake.Tests.Pages
             });
         }
 
+        [Test]
+        public async Task OnPost_rejects_an_email_address_outside_the_dfe_domain()
+        {
+            var model = new AboutYouModel().WithContext(_session);
+            SetValidDetails(model);
+            model.EmailAddress = "alex.edwards@dxw.com";
+
+            var result = await model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<PageResult>());
+            Assert.That(Session.GetAboutYouEmailAddress(_session), Is.Null);
+            Assert.That(model.ModelState[nameof(model.EmailAddress)]!.Errors,
+                Has.Some.Property("ErrorMessage")
+                    .Contains("Enter a DfE email address in the correct format"));
+        }
+
+        [Test]
+        public async Task OnPost_accepts_a_dfe_email_address_regardless_of_case()
+        {
+            var model = new AboutYouModel().WithContext(_session);
+            SetValidDetails(model);
+            model.EmailAddress = "Joe.Bloggs@Education.Gov.UK";
+
+            var result = await model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
+            Assert.That(Session.GetAboutYouEmailAddress(_session), Is.EqualTo("Joe.Bloggs@Education.Gov.UK"));
+        }
+
         private static void SetValidDetails(AboutYouModel model)
         {
             model.FullName = "Jane";
-            model.EmailAddress = "jane@example.com";
+            model.EmailAddress = "jane@education.gov.uk";
             model.RequestDetails = "Details";
             model.CanContact = "yes";
         }
