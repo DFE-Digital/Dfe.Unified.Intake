@@ -7,16 +7,22 @@ namespace Dfe.Unified.Intake.Pages
 {
     public class RequestSubmittedModel : PageModel
     {
-        public string? ReferenceNumber { get; private set; }
+        [TempData]
+        public string? ReferenceNumber { get; set; }
 
         public void OnGet()
         {
-            ReferenceNumber = Session.GetReferenceNumber(HttpContext.Session);
+            var fromSession = Session.GetReferenceNumber(HttpContext.Session);
+            if (fromSession is not null)
+                ReferenceNumber = fromSession;
+
+            // Clear it completely.
+            Session.Clear(HttpContext.Session);
         }
 
         public IActionResult OnPost()
         {
-            Session.Reset(HttpContext.Session);
+            Session.Clear(HttpContext.Session);
             return RedirectToPage(Links.Index.PageName);
         }
     }
