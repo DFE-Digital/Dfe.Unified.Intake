@@ -14,14 +14,19 @@ namespace Dfe.Unified.Intake.Pages.Helpers
 
         private static string ContentKey(string storedName) => ContentKeyPrefix + storedName;
 
-        // Replaces any previously stored documents for this session with the supplied files.
+        // Adds the supplied files to any already stored for this session
         public static async Task SaveAsync(ISession session, IFormFileCollection files)
         {
-            Clear(session);
+            var documents = GetAll(session).ToList();
+            var seen = new HashSet<(string, long)>(
+                documents.Select(d => (d.FileName.ToLowerInvariant(), d.Length)));
 
-            var documents = new List<SupportingDocument>();
             foreach (var file in files)
             {
+                // Keep only the first occurrence of each name/size combination.
+                if (!seen.Add((file.FileName.ToLowerInvariant(), file.Length)))
+                    continue;
+
                 // Store the contents under an opaque key, keeping the (untrusted) original file name as display metadata only.
                 var storedFileName = Guid.NewGuid().ToString("N");
 

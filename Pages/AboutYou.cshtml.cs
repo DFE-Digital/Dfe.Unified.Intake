@@ -18,8 +18,15 @@ namespace Dfe.Unified.Intake.Pages
 
         [BindProperty]
         [Required(ErrorMessage = "Enter your email address")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address")]
+        [EmailAddress(ErrorMessage = DfeEmailErrorMessage)]
         public string? EmailAddress { get; set; }
+
+        /// <summary>The domain every accepted DfE email address must end with.</summary>
+        private const string DfeEmailDomain = "@education.gov.uk";
+
+        /// <summary>Shown when the supplied email is not a correctly formatted DfE address.</summary>
+        private const string DfeEmailErrorMessage =
+            "Enter a DfE email address in the correct format, e.g. joe.bloggs@education.gov.uk";
 
         public const int MaxRequestDetailsLength = 2000;
 
@@ -71,6 +78,7 @@ namespace Dfe.Unified.Intake.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            ValidateEmailAddress();
             ValidateRequestDetailsLength();
             ValidateSupportingInformation();
 
@@ -123,6 +131,23 @@ namespace Dfe.Unified.Intake.Pages
         private void LoadUploadedDocuments() =>
             UploadedDocuments = SupportingDocuments.GetAll(HttpContext.Session);
 
+        /// <summary>
+        /// Only DfE email addresses are accepted, so anything supplied must end with the DfE domain
+        /// (case-insensitive). The format check is left to the <see cref="EmailAddressAttribute"/>.
+        /// </summary>
+        private void ValidateEmailAddress()
+        {
+            if (string.IsNullOrWhiteSpace(EmailAddress))
+                return;
+
+            // The format check already reported this field, so a further error would just duplicate it
+            if (ModelState.TryGetValue(nameof(EmailAddress), out var entry) && entry.Errors.Count > 0)
+                return;
+
+            if (!EmailAddress.EndsWith(DfeEmailDomain, StringComparison.OrdinalIgnoreCase))
+                ModelState.AddModelError(nameof(EmailAddress), DfeEmailErrorMessage);
+        }
+
         private void ValidateRequestDetailsLength()
         {
             if (RequestDetails is null)
@@ -145,7 +170,9 @@ namespace Dfe.Unified.Intake.Pages
             if (SupportingInformation is not { Count: > 0 })
                 return;
 
-            if (SupportingInformation.Count > MaxFileCount)
+            // Newly selected files are added to any already stored, so the combined total is what must fit the limit.
+            var alreadyStored = SupportingDocuments.GetAll(HttpContext.Session).Count;
+            if (alreadyStored + SupportingInformation.Count > MaxFileCount)
                 ModelState.AddModelError(
                     nameof(SupportingInformation),
                     $"You can upload up to {MaxFileCount} files");

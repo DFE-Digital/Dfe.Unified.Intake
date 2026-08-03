@@ -69,7 +69,7 @@ namespace Dfe.Unified.Intake.Tests.Helpers
         }
 
         [Test]
-        public async Task SaveAsync_replaces_previously_stored_documents()
+        public async Task SaveAsync_appends_to_previously_stored_documents()
         {
             await SupportingDocuments.SaveAsync(_session,
                 new FormFileCollection { MakeFile("old.pdf", "application/pdf", "old") });
@@ -78,8 +78,48 @@ namespace Dfe.Unified.Intake.Tests.Helpers
                 new FormFileCollection { MakeFile("new.pdf", "application/pdf", "new") });
 
             var documents = SupportingDocuments.GetAll(_session);
+            Assert.That(documents, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(documents[0].FileName, Is.EqualTo("old.pdf"));
+                Assert.That(documents[1].FileName, Is.EqualTo("new.pdf"));
+            });
+        }
+
+        [Test]
+        public async Task SaveAsync_skips_files_already_stored_in_the_session()
+        {
+            await SupportingDocuments.SaveAsync(_session,
+                new FormFileCollection { MakeFile("report.pdf", "application/pdf", "data") });
+
+            await SupportingDocuments.SaveAsync(_session,
+                new FormFileCollection { MakeFile("report.pdf", "application/pdf", "data") });
+
+            var documents = SupportingDocuments.GetAll(_session);
             Assert.That(documents, Has.Count.EqualTo(1));
-            Assert.That(documents[0].FileName, Is.EqualTo("new.pdf"));
+            Assert.That(documents[0].FileName, Is.EqualTo("report.pdf"));
+        }
+
+        [Test]
+        public async Task SaveAsync_skips_duplicate_files_with_the_same_name_and_size()
+        {
+            var files = new FormFileCollection
+            {
+                MakeFile("report.pdf", "application/pdf", "same"),
+                MakeFile("report.pdf", "application/pdf", "same"),
+                MakeFile("REPORT.PDF", "application/pdf", "same"),
+                MakeFile("other.pdf", "application/pdf", "different")
+            };
+
+            await SupportingDocuments.SaveAsync(_session, files);
+
+            var documents = SupportingDocuments.GetAll(_session);
+            Assert.That(documents, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(documents[0].FileName, Is.EqualTo("report.pdf"));
+                Assert.That(documents[1].FileName, Is.EqualTo("other.pdf"));
+            });
         }
 
         [Test]
