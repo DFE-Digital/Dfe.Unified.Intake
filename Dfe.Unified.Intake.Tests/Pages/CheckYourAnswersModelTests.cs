@@ -326,6 +326,25 @@ namespace Dfe.Unified.Intake.Tests.Pages
         }
 
         [Test]
+        public async Task OnPostStartScan_returns_the_real_error_when_submitting_a_file_fails()
+        {
+            await SupportingDocuments.SaveAsync(_session, new FormFileCollection { MakeFile("a.txt", "hi") });
+            var scanner = new Mock<IVirusScanner>();
+            scanner
+                .Setup(s => s.SubmitAsync(
+                    It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("ClamAV rejected the file: unsupported media type."));
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, "{}"), scanner: scanner.Object);
+
+            var result = await model.OnPostStartScanAsync(CancellationToken.None);
+
+            var objectResult = (ObjectResult)result;
+            Assert.That(objectResult.StatusCode, Is.EqualTo(StatusCodes.Status502BadGateway));
+            var error = JsonSerializer.SerializeToDocument(objectResult.Value).RootElement.GetProperty("error");
+            Assert.That(error.GetString(), Is.EqualTo("ClamAV rejected the file: unsupported media type."));
+        }
+
+        [Test]
         public async Task OnGetScanStatus_reports_the_status_as_a_lowercase_string()
         {
             var scanner = new Mock<IVirusScanner>();

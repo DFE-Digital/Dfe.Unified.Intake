@@ -38,5 +38,25 @@ namespace Dfe.Unified.Intake.Tests.Helpers
         {
             Assert.That(state.IsPending(), Is.EqualTo(expected));
         }
+
+        [TestCase("report.pdf", "report.pdf")]                        // already safe, left untouched
+        [TestCase("Jane's report.pdf", "Jane_s_report.pdf")]         // apostrophe and space
+        [TestCase("quarterly \"summary\".xlsx", "quarterly_summary_.xlsx")]
+        [TestCase("my file (final) v2.docx", "my_file_final_v2.docx")]
+        [TestCase("a/b/c\\d.png", "d.png")]                          // directory components stripped
+        [TestCase("café.png", "caf_.png")]                           // non-ASCII letters removed
+        public void SanitizeFileName_removes_characters_that_break_the_upload(string input, string expected)
+        {
+            Assert.That(VirusScanner.SanitizeFileName(input), Is.EqualTo(expected));
+        }
+
+        [TestCase("")]
+        [TestCase("   ")]
+        [TestCase("''")]
+        [TestCase(null)]
+        public void SanitizeFileName_falls_back_when_nothing_usable_remains(string? input)
+        {
+            Assert.That(VirusScanner.SanitizeFileName(input), Is.EqualTo("file"));
+        }
     }
 }
