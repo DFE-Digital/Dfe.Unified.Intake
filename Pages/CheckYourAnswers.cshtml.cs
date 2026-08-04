@@ -107,13 +107,23 @@ namespace Dfe.Unified.Intake.Pages
             var documents = SupportingDocuments.GetAll(HttpContext.Session);
 
             var files = new List<object>();
-            foreach (var document in documents)
+            try
             {
-                await using var contents = SupportingDocuments.OpenRead(HttpContext.Session, document);
+                foreach (var document in documents)
+                {
+                    await using var contents = SupportingDocuments.OpenRead(HttpContext.Session, document);
 
-                var jobId = await _scanner.SubmitAsync(document.FileName, document.ContentType, contents, cancellationToken);
+                    var jobId = await _scanner.SubmitAsync(document.FileName, document.ContentType, contents, cancellationToken);
 
-                files.Add(new { storedName = document.StoredFileName, fileName = document.FileName, jobId });
+                    files.Add(new { storedName = document.StoredFileName, fileName = document.FileName, jobId });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Surface the underlying failure (e.g. a ClamAV API error rejecting a particular file) to the
+                // browser so it can show the real reason instead of a generic "please try again".
+                _logger.LogError(ex, "Failed to start virus scan for the uploaded documents.");
+                return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message });
             }
 
             return new JsonResult(new { files });

@@ -24,6 +24,9 @@ namespace Dfe.Unified.Intake.Pages.Helpers
             session.Remove(ReferenceNumberKey);
         }
 
+        // Wipes every value held in the session, including any not covered by the known keys above.
+        public static void Clear(ISession session) => session.Clear();
+
         // TellUsWhatYouNeed
 
         public static void SetTellUsWhatYouNeed(ISession session, string value) =>

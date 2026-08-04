@@ -23,7 +23,12 @@
     <partial name="_Header" />
 
     <div class="govuk-width-container">
-        @await RenderSectionAsync("BeforeMain", false)
+        @if (IsSectionDefined("BeforeMain"))
+        {
+            <nav aria-label="Back">
+                @await RenderSectionAsync("BeforeMain", false)
+            </nav>
+        }
 
         <main class="govuk-main-wrapper" id="main-content" role="main">
             @RenderBody()

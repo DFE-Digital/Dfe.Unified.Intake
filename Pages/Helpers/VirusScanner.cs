@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using GovUK.Dfe.ClamAV.Api.Client.Contracts;
 
 namespace Dfe.Unified.Intake.Pages.Helpers
@@ -50,16 +51,42 @@ namespace Dfe.Unified.Intake.Pages.Helpers
         private readonly IClamAvApiClient _client;
         private readonly ILogger<VirusScanner> _logger;
 
+        // Any run of characters other than letters, digits, dot, hyphen or underscore. These (apostrophes,
+        // quotes, spaces, other punctuation) can break the multipart upload to the ClamAV API.
+        private static readonly Regex UnsafeFileNameCharacters = new(@"[^A-Za-z0-9._-]+", RegexOptions.Compiled);
+
         public VirusScanner(IClamAvApiClient client, ILogger<VirusScanner> logger)
         {
             _client = client;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Produces a file name safe to send to the ClamAV API. The browser-supplied name can contain
+        /// characters (an apostrophe, for example) that break the upload, so any run of characters outside
+        /// a conservative whitelist is collapsed to a single underscore and the extension is preserved. Used
+        /// only for the scan upload; the original name is kept elsewhere for display and submission.
+        /// </summary>
+        public static string SanitizeFileName(string? fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return "file";
+
+            // Drop any directory components a browser might include (handling both separators regardless of
+            // the host OS) before sanitising what remains.
+            var lastSeparator = fileName.LastIndexOfAny(new[] { '/', '\\' });
+            var name = lastSeparator >= 0 ? fileName[(lastSeparator + 1)..] : fileName;
+
+            var sanitised = UnsafeFileNameCharacters.Replace(name, "_").Trim('_');
+
+            return sanitised.Length == 0 ? "file" : sanitised;
+        }
+
         public async Task<string> SubmitAsync(
             string fileName, string? contentType, Stream content, CancellationToken cancellationToken = default)
         {
-            var file = new FileParameter(content, fileName, contentType ?? "application/octet-stream");
+            var safeFileName = SanitizeFileName(fileName);
+            var file = new FileParameter(content, safeFileName, contentType ?? "application/octet-stream");
             var response = await _client.ScanAsync(file, cancellationToken);
 
             if (string.IsNullOrEmpty(response.JobId))

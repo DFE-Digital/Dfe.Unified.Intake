@@ -173,10 +173,17 @@
 
         fetch(startUrl, { method: "POST", headers: headers })
             .then(function (response) {
-                if (!response.ok) {
-                    throw new Error("start failed " + response.status);
+                if (response.ok) {
+                    return response.json();
                 }
-                return response.json();
+                // Read the real error the server reported so it can be shown to the user, falling back to
+                // the HTTP status when the body is not the expected JSON (e.g. an unhandled error page).
+                return response.json()
+                    .catch(function () { return null; })
+                    .then(function (body) {
+                        throw new Error(
+                            (body && body.error) || ("the server returned status " + response.status));
+                    });
             })
             .then(function (data) {
                 (data.files || []).forEach(function (file) {
@@ -188,8 +195,9 @@
                 attempts = 0;
                 pollRound();
             })
-            .catch(function () {
-                failed("We could not start the virus check. Please try again.");
+            .catch(function (error) {
+                var detail = error && error.message ? error.message : "please try again";
+                failed("We could not start the virus check: " + detail + ".");
             });
     }
 
