@@ -1,7 +1,12 @@
 ﻿@using GovUk.Frontend.AspNetCore
 
 @{
-    var titleDescription = Context.Request.Path == "/" ? string.Empty : "- Unified Intake";
+    var pageTitle = string.Join(" - ", new[]
+    {
+        ViewData["Title"] as string,
+        "Unified intake and routing model",
+        "Department for Education"
+    }.Where(part => !string.IsNullOrWhiteSpace(part)));
 }
 
 <!DOCTYPE html>
@@ -15,10 +20,12 @@
     <link rel="mask-icon" href="/images/govuk-icon-mask.svg" color="#1d70b8">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/govuk-icon-180.png">
 
-    <title>@ViewData["Title"] @titleDescription</title>
+    <title>@pageTitle</title>
 </head>
 <body class="govuk-template__body">
     @Html.GovUkFrontendJsEnabledScript()
+
+    <govuk-skip-link href="#main-content">Skip to main content</govuk-skip-link>
 
     <partial name="_Header" />
 
