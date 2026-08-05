@@ -1,9 +1,16 @@
 ﻿@using GovUk.Frontend.AspNetCore
 
 @{
+    var title = ViewData["Title"] as string;
+
+    if (!ViewData.ModelState.IsValid)
+    {
+        title = $"Error: {title}";
+    }
+
     var pageTitle = string.Join(" - ", new[]
     {
-        ViewData["Title"] as string,
+        title,
         "Unified intake and routing model",
         "Department for Education"
     }.Where(part => !string.IsNullOrWhiteSpace(part)));
