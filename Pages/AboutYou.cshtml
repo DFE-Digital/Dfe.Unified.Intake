@@ -12,7 +12,7 @@
 <h1 class="govuk-heading-l">About you</h1>
 
 <form method="post" enctype="multipart/form-data">
-    <govuk-input for="FullName">
+    <govuk-input for="FullName" autocomplete="name">
         <govuk-input-label class="govuk-label--s">Full name</govuk-input-label>
     </govuk-input>
 
@@ -44,7 +44,7 @@
         If your information includes any of these, you may be contacted to discuss alternative ways to share it more securely.
     </govuk-warning-text>
 
-    <h3 class="govuk-heading-s">Upload your documents</h3>
+    <h3 class="govuk-heading-s">Upload your documents (Optional)</h3>
     <p class="govuk-body">You can upload up to 20 files. This is optional. Accepted file types are PNG, JPG, PDF, DOCX and XLSX. Each file must be no larger than @(AboutYouModel.MaxFileSizeMb)MB.</p>
 
     @if (Model.UploadedDocuments.Count > 0)
@@ -71,7 +71,7 @@
                        multiple="true"
                        javascript-enhancements="true"
                        accept=".png,.jpg,.jpeg,.pdf,.docx,.xlsx,image/png,image/jpeg,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-        <govuk-file-upload-label class="govuk-visually-hidden">Upload your documents</govuk-file-upload-label>
+        <govuk-file-upload-label class="govuk-visually-hidden">Upload your documents (Optional)</govuk-file-upload-label>
     </govuk-file-upload>
 
     <govuk-button>Continue</govuk-button>
