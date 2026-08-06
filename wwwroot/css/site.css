@@ -15,6 +15,10 @@
     margin-bottom: 45px;
 }
 
+.govuk-select {
+    min-width: 0;
+}
+
 /* Renders a submit button as a GOV.UK link, so a mutating action (e.g. "Remove" in a summary list)
    can be a real button while looking like a link. Combine with govuk-link, which supplies the colour,
    underline, hover and focus styles. */
