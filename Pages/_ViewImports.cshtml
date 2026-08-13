@@ -1,4 +1,7 @@
 ﻿@using Dfe.Unified.Intake
+@using Dfe.Unified.Intake.Configuration
+@using Microsoft.Extensions.Options
 @namespace Dfe.Unified.Intake.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, GovUk.Frontend.AspNetCore
+@inject IOptions<ApplicationInsightsOptions> ApplicationInsightsOptions
