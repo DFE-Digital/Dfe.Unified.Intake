@@ -1,4 +1,5 @@
-﻿using Dfe.Unified.Intake.Pages.Helpers;
+﻿using Dfe.Unified.Intake.Configuration;
+using Dfe.Unified.Intake.Pages.Helpers;
 using GovUk.Frontend.AspNetCore;
 using GovUK.Dfe.ClamAV.Api.Client;
 using GovUK.Dfe.ClamAV.Api.Client.Contracts;
@@ -28,8 +29,11 @@ namespace Dfe.Unified.Intake
             string appInsightsConnectionString = Configuration["ApplicationInsights:ConnectionString"];
             if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
             {
+                services.Configure<ApplicationInsightsOptions>(Configuration.GetSection(ApplicationInsightsOptions.ConfigurationSection));
                 services.AddApplicationInsightsTelemetry();
             }
+
+            services.AddHealthChecks();
 
             services.AddSession();
 
@@ -108,6 +112,7 @@ namespace Dfe.Unified.Intake
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapHealthChecks("/health").AllowAnonymous();
                 endpoints.MapStaticAssets();
                 endpoints.MapRazorPages().WithStaticAssets();
                 endpoints.MapControllers();
