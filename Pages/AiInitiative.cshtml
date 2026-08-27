@@ -1,0 +1,26 @@
+@page
+@model AiInitiativeModel
+@{
+    ViewData["Title"] = "Is your request related to an AI initiative?";
+}
+
+@section BeforeMain
+{
+    <a class="govuk-back-link" data-cy="select-backlink" asp-page="/RequestAbout">Back</a>
+}
+
+<form method="post">
+    <govuk-radios for="AiInitiative" class="govuk-radios--inline">
+        <govuk-radios-fieldset>
+            <govuk-radios-fieldset-legend is-page-heading="true" class="govuk-fieldset__legend--l">Is your request related to an AI initiative?</govuk-radios-fieldset-legend>
+            <govuk-radios-hint>
+                <p class="govuk-!-margin-top-0 govuk-!-margin-bottom-3">This includes using AI to explore, create or enhance a tool, service or way of working to improve outcomes for education.</p>
+                <p class="govuk-!-margin-top-0 govuk-!-margin-bottom-0">For example, "AI for Good".</p>
+            </govuk-radios-hint>
+            <govuk-radios-item value="yes">Yes</govuk-radios-item>
+            <govuk-radios-item value="no">No</govuk-radios-item>
+        </govuk-radios-fieldset>
+    </govuk-radios>
+
+    <govuk-button>Continue</govuk-button>
+</form>

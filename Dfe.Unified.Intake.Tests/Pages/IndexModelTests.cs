@@ -22,19 +22,25 @@ namespace Dfe.Unified.Intake.Tests.Pages
         }
 
         [Test]
-        public void OnGet_populates_from_session()
+        public void OnGet_splits_the_stored_services_back_into_the_checkbox_list()
         {
-            Session.SetTellUsWhatYouNeedService(_session, "MSI");
-            Session.SetTellUsWhatYouNeed(_session, "suggest-a-change");
+            Session.SetTellUsWhatYouNeedService(_session, "MSI,FAST");
             var model = new IndexModel().WithContext(_session);
 
             model.OnGet(serviceCode: null);
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(model.Service, Is.EqualTo("MSI"));
-                Assert.That(model.RequestType, Is.EqualTo("suggest-a-change"));
-            });
+            Assert.That(model.Services, Is.EqualTo(new[] { "MSI", "FAST" }));
+        }
+
+        [Test]
+        public void OnGet_drops_stored_codes_that_are_no_longer_offered()
+        {
+            Session.SetTellUsWhatYouNeedService(_session, "MSI,not-a-real-code");
+            var model = new IndexModel().WithContext(_session);
+
+            model.OnGet(serviceCode: null);
+
+            Assert.That(model.Services, Is.EqualTo(new[] { "MSI" }));
         }
 
         [Test]
@@ -45,7 +51,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
             model.OnGet(serviceCode: "prepare");
 
             // Case-insensitive match resolves to the canonical casing.
-            Assert.That(model.Service, Is.EqualTo("Prepare"));
+            Assert.That(model.Services, Is.EqualTo(new[] { "Prepare" }));
         }
 
         [Test]
@@ -56,7 +62,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             model.OnGet(serviceCode: "prepare");
 
-            Assert.That(model.Service, Is.EqualTo("MSI"));
+            Assert.That(model.Services, Is.EqualTo(new[] { "MSI" }));
         }
 
         [Test]
@@ -66,14 +72,37 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             model.OnGet(serviceCode: "not-a-real-code");
 
-            Assert.That(model.Service, Is.Null);
+            Assert.That(model.Services, Is.Empty);
         }
 
         [Test]
-        public void OnPost_returns_the_page_when_model_state_is_invalid()
+        public void OnGet_accepts_a_deep_link_to_something_new()
         {
             var model = new IndexModel().WithContext(_session);
-            model.ModelState.AddModelError("Service", "Select a service");
+
+            model.OnGet(serviceCode: "SE");
+
+            Assert.That(model.Services, Is.EqualTo(new[] { "SE" }));
+        }
+
+        [Test]
+        public void OnPost_returns_the_page_when_nothing_is_selected()
+        {
+            var model = new IndexModel().WithContext(_session);
+
+            var result = model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<PageResult>());
+            Assert.That(model.ModelState["Services"]!.Errors[0].ErrorMessage,
+                Is.EqualTo("Select at least one service"));
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.Null);
+        }
+
+        [Test]
+        public void OnPost_returns_the_page_when_only_unknown_codes_are_posted()
+        {
+            var model = new IndexModel().WithContext(_session);
+            model.Services = ["not-a-real-code"];
 
             var result = model.OnPost();
 
@@ -82,21 +111,75 @@ namespace Dfe.Unified.Intake.Tests.Pages
         }
 
         [Test]
-        public void OnPost_saves_to_session_and_redirects_when_valid()
+        public void OnPost_returns_the_page_when_model_state_is_invalid()
         {
             var model = new IndexModel().WithContext(_session);
-            model.Service = "MSI";
-            model.RequestType = "suggest-a-change";
+            model.Services = ["MSI"];
+            model.ModelState.AddModelError("Services", "Select at least one service");
+
+            var result = model.OnPost();
+
+            Assert.That(result, Is.InstanceOf<PageResult>());
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.Null);
+        }
+
+        [Test]
+        public void OnPost_saves_the_selection_and_redirects_when_valid()
+        {
+            var model = new IndexModel().WithContext(_session);
+            model.Services = ["MSI"];
 
             var result = model.OnPost();
 
             Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
-            Assert.That(((RedirectToPageResult)result).PageName, Is.EqualTo("/AboutYou"));
-            Assert.Multiple(() =>
-            {
-                Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("MSI"));
-                Assert.That(Session.GetTellUsWhatYouNeed(_session), Is.EqualTo("suggest-a-change"));
-            });
+            Assert.That(((RedirectToPageResult)result).PageName, Is.EqualTo("/RequestAbout"));
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("MSI"));
+        }
+
+        [Test]
+        public void OnPost_stores_several_services_comma_separated_in_catalogue_order()
+        {
+            var model = new IndexModel().WithContext(_session);
+            // Posted in an arbitrary order; stored in the order the page presents them.
+            model.Services = ["MSI", "REEP", "FAST"];
+
+            model.OnPost();
+
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("REEP,FAST,MSI"));
+        }
+
+        [Test]
+        public void OnPost_normalises_the_casing_of_posted_codes()
+        {
+            var model = new IndexModel().WithContext(_session);
+            model.Services = ["msi"];
+
+            model.OnPost();
+
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("MSI"));
+        }
+
+        [Test]
+        public void OnPost_discards_unknown_codes_but_keeps_the_recognised_ones()
+        {
+            var model = new IndexModel().WithContext(_session);
+            model.Services = ["MSI", "not-a-real-code"];
+
+            model.OnPost();
+
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("MSI"));
+        }
+
+        [Test]
+        public void OnPost_treats_something_new_as_an_exclusive_choice()
+        {
+            var model = new IndexModel().WithContext(_session);
+            // Possible with JavaScript off, where the browser cannot untick the other boxes for us.
+            model.Services = ["MSI", "SE", "FAST"];
+
+            model.OnPost();
+
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("SE"));
         }
 
         [Test]

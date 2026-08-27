@@ -6,6 +6,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
     {
         private const string TellUsWhatYouNeedKey = "TellUsWhatYouNeed";
         private const string TellUsWhatYouNeedServiceKey = "TellUsWhatYouNeed_Service";
+        private const string AiInitiativeKey = "AiInitiative";
 
         private const string AboutYouFullNameKey = "AboutYou_FullName";
         private const string AboutYouEmailAddressKey = "AboutYou_EmailAddress";
@@ -16,6 +17,7 @@ namespace Dfe.Unified.Intake.Pages.Helpers
         {
             session.Remove(TellUsWhatYouNeedKey);
             session.Remove(TellUsWhatYouNeedServiceKey);
+            session.Remove(AiInitiativeKey);
             session.Remove(AboutYouFullNameKey);
             session.Remove(AboutYouEmailAddressKey);
             session.Remove(AboutYouRequestDetailsKey);
@@ -40,6 +42,14 @@ namespace Dfe.Unified.Intake.Pages.Helpers
 
         public static string? GetTellUsWhatYouNeedService(ISession session) =>
             session.GetString(TellUsWhatYouNeedServiceKey);
+
+        // AiInitiative
+
+        public static void SetAiInitiative(ISession session, string value) =>
+            session.SetString(AiInitiativeKey, value);
+
+        public static string? GetAiInitiative(ISession session) =>
+            session.GetString(AiInitiativeKey);
 
         // AboutYou
 

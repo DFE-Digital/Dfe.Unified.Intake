@@ -12,6 +12,8 @@ namespace Dfe.Unified.Intake.Pages.Models
         public required string? RequestDetails { get; init; }
         // "yes"/"no" — the backend expects a string, not a boolean.
         public required string ContactPermission { get; init; }
+        // "yes"/"no", same as ContactPermission — whether the request relates to an AI initiative.
+        public required string AiInitiative { get; init; }
         public required IReadOnlyList<SubmissionAttachment> Attachments { get; init; }
     }
 

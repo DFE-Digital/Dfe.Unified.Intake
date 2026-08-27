@@ -1,12 +1,13 @@
 ﻿{
   "requestType": "Suggest a change",
-  "service": "Manage School Improvements (MSI)",
+  "service": "Manage School Improvement (MSI), Find Information about Schools and Trusts (FAST)",
   "submittedBy": {
     "name": "Jane Smith",
     "email": "jane.smith@example.com"
   },
   "requestDetails": "Improve the dashboard to make it easier to filter data by multiple criteria.",
   "contactPermission": "yes",
+  "aiInitiative": "no",
   "attachments": [
     {
       "fileName": "dashboard-feedback.png",

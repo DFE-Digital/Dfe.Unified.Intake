@@ -8,14 +8,6 @@ namespace Dfe.Unified.Intake.Tests.Pages
     public class SimplePagesTests
     {
         [Test]
-        public void WeHaveReceivedYourRequestModel_OnGet_does_not_throw()
-        {
-            var model = new WeHaveReceivedYourRequestModel().WithContext();
-
-            Assert.DoesNotThrow(() => model.OnGet());
-        }
-
-        [Test]
         public void ErrorModel_OnGet_falls_back_to_the_trace_identifier()
         {
             var model = new ErrorModel().WithContext();

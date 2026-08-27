@@ -2,47 +2,42 @@ using Dfe.Unified.Intake.Pages.Helpers;
 using Dfe.Unified.Intake.Pages.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
 
 namespace Dfe.Unified.Intake.Pages
 {
     public class IndexModel : PageModel
     {
         [BindProperty]
-        [Required(ErrorMessage = "Select a service")]
-        public string? Service { get; set; }
-
-        [BindProperty]
-        [Required(ErrorMessage = "Select what your request is about")]
-        public string? RequestType { get; set; }
+        public IList<string> Services { get; set; } = [];
 
         [BindProperty]
         public string? ServiceCode { get; set; }
 
-        private static readonly string[] ValidServiceCodes =
-            { "EAT", "VCC", "REEP", "MSI", "Prepare", "Complete", "FAST", "RECAST", "MFSP" };
-
         public void OnGet(string? serviceCode)
         {
-            Service = Session.GetTellUsWhatYouNeedService(HttpContext.Session);
-            RequestType = Session.GetTellUsWhatYouNeed(HttpContext.Session);
+            Services = ServiceCatalogue.Split(Session.GetTellUsWhatYouNeedService(HttpContext.Session))
+                .Select(ServiceCatalogue.NormaliseCode)
+                .OfType<string>()
+                .ToList();
 
-            if (string.IsNullOrWhiteSpace(Service) && !string.IsNullOrWhiteSpace(serviceCode))
-            {
-                Service = ValidServiceCodes.FirstOrDefault(
-                    code => string.Equals(code, serviceCode, StringComparison.OrdinalIgnoreCase));
-            }
+            // A deep-linked service code only pre-selects a service when the user has not chosen one already.
+            if (Services.Count == 0 && ServiceCatalogue.NormaliseCode(serviceCode) is { } deepLinkedCode)
+                Services = [deepLinkedCode];
         }
 
         public IActionResult OnPost()
         {
+            var selected = SelectedCodes();
+
+            if (selected.Count == 0)
+                ModelState.AddModelError(nameof(Services), "Select at least one service");
+
             if (!ModelState.IsValid)
                 return Page();
 
-            Session.SetTellUsWhatYouNeedService(HttpContext.Session, Service!);
-            Session.SetTellUsWhatYouNeed(HttpContext.Session, RequestType!);
+            Session.SetTellUsWhatYouNeedService(HttpContext.Session, string.Join(",", selected));
 
-            return RedirectToPage(Links.AboutYou.PageName);
+            return RedirectToPage(Links.RequestAbout.PageName);
         }
 
         public IActionResult OnPostCreateRequest()
@@ -54,6 +49,22 @@ namespace Dfe.Unified.Intake.Pages
                 : new { serviceCode = ServiceCode };
 
             return RedirectToPage("/Index", routeValues);
+        }
+
+        private IReadOnlyList<string> SelectedCodes()
+        {
+            var codes = Services
+                .Select(ServiceCatalogue.NormaliseCode)
+                .OfType<string>()
+                .ToHashSet();
+
+            if (codes.Contains(ServiceCatalogue.SomethingNewCode))
+                return [ServiceCatalogue.SomethingNewCode];
+
+            return ServiceCatalogue.All
+                .Where(service => codes.Contains(service.Code))
+                .Select(service => service.Code)
+                .ToList();
         }
     }
 }
