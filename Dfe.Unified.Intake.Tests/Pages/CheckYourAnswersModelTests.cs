@@ -60,15 +60,15 @@ namespace Dfe.Unified.Intake.Tests.Pages
         public void OnGet_lists_every_selected_service_in_catalogue_order()
         {
             SeedAnswers();
-            Session.SetTellUsWhatYouNeedService(_session, "MSI,REEP");
+            Session.SetTellUsWhatYouNeedService(_session, "REEP,MSI");
             var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson()));
 
             model.OnGet();
 
             Assert.That(model.Services, Is.EqualTo(new[]
             {
-                "Record Engagement with Education Providers (REEP)",
-                "Manage School Improvement (MSI)"
+                "Manage School Improvement (MSI)",
+                "Record Engagement with Education Providers (REEP)"
             }));
         }
 
@@ -187,7 +187,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
         public async Task OnPost_sends_every_selected_service_as_one_comma_separated_value()
         {
             SeedAnswers();
-            Session.SetTellUsWhatYouNeedService(_session, "MSI,REEP");
+            Session.SetTellUsWhatYouNeedService(_session, "REEP,MSI");
             var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
             var model = BuildModel(handler);
 
@@ -195,7 +195,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             using var doc = JsonDocument.Parse(handler.CapturedRequestBody!);
             Assert.That(doc.RootElement.GetProperty("service").GetString(),
-                Is.EqualTo("Record Engagement with Education Providers (REEP), Manage School Improvement (MSI)"));
+                Is.EqualTo("Manage School Improvement (MSI), Record Engagement with Education Providers (REEP)"));
         }
 
         [Test]

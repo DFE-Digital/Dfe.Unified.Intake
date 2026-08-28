@@ -28,6 +28,14 @@ namespace Dfe.Unified.Intake.Tests.Models
         }
 
         [Test]
+        public void Named_services_are_listed_alphabetically_by_label()
+        {
+            var labels = ServiceCatalogue.NamedServices.Select(service => service.Label).ToList();
+
+            Assert.That(labels, Is.EqualTo(labels.OrderBy(label => label, StringComparer.Ordinal)));
+        }
+
+        [Test]
         public void NormaliseCode_resolves_a_code_to_its_canonical_casing()
         {
             Assert.That(ServiceCatalogue.NormaliseCode("prepare"), Is.EqualTo("Prepare"));
@@ -51,10 +59,10 @@ namespace Dfe.Unified.Intake.Tests.Models
         [Test]
         public void LabelsFor_returns_display_labels_in_catalogue_order()
         {
-            Assert.That(ServiceCatalogue.LabelsFor("MSI,REEP"), Is.EqualTo(new[]
+            Assert.That(ServiceCatalogue.LabelsFor("REEP,MSI"), Is.EqualTo(new[]
             {
-                "Record Engagement with Education Providers (REEP)",
-                "Manage School Improvement (MSI)"
+                "Manage School Improvement (MSI)",
+                "Record Engagement with Education Providers (REEP)"
             }));
         }
 

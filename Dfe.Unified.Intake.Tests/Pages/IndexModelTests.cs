@@ -145,7 +145,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             model.OnPost();
 
-            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("REEP,FAST,MSI"));
+            Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.EqualTo("FAST,MSI,REEP"));
         }
 
         [Test]

@@ -16,20 +16,20 @@ namespace Dfe.Unified.Intake.Pages.Models
         public const string SomethingNewCode = "SE";
 
         /// <summary>
-        /// Every service, in the order they are presented to the user. "Something new" comes last,
-        /// behind an "or" divider, and is rendered separately by the page.
+        /// Every service, in the order they are presented to the user: the named services alphabetically
+        /// by label, then "Something new" last, behind an "or" divider and rendered separately by the page.
         /// </summary>
         public static readonly IReadOnlyList<ServiceOption> All =
         [
-            new("REEP", "Record Engagement with Education Providers (REEP)"),
             new("Complete", "Complete Conversions and Transfers (Complete)"),
             new("EAT", "External Applications - Academy Transfers (EAT)"),
-            new("VCC", "Vulnerable Children’s Casework (VCC)"),
             new("FAST", "Find Information about Schools and Trusts (FAST)"),
             new("MFSP", "Manage Free School Projects (MFSP)"),
             new("MSI", "Manage School Improvement (MSI)"),
             new("Prepare", "Prepare Conversions and Transfers (Prepare)"),
             new("RECAST", "Record Concerns and Supports for Trusts (RECAST)"),
+            new("REEP", "Record Engagement with Education Providers (REEP)"),
+            new("VCC", "Vulnerable Children’s Casework (VCC)"),
             new(SomethingNewCode, "Something new", "None of the services above match your request")
         ];
 
