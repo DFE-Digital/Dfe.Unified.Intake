@@ -12,6 +12,8 @@ namespace Dfe.Unified.Intake.Tests.Models
             Assert.Multiple(() =>
             {
                 Assert.That(Links.Index.PageName, Is.EqualTo("/Index"));
+                Assert.That(Links.RequestAbout.PageName, Is.EqualTo("/RequestAbout"));
+                Assert.That(Links.AiInitiative.PageName, Is.EqualTo("/AiInitiative"));
                 Assert.That(Links.AboutYou.PageName, Is.EqualTo("/AboutYou"));
                 Assert.That(Links.CheckYourAnswers.PageName, Is.EqualTo("/CheckYourAnswers"));
                 Assert.That(Links.RequestSubmitted.PageName, Is.EqualTo("/RequestSubmitted"));

@@ -46,12 +46,71 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             Assert.Multiple(() =>
             {
-                Assert.That(model.Service, Is.EqualTo("Find Information about Schools and Trusts"));
+                Assert.That(model.Services,
+                    Is.EqualTo(new[] { "Find Information about Schools and Trusts (FAST)" }));
                 Assert.That(model.RequestType, Is.EqualTo("Suggest a change"));
+                Assert.That(model.AiInitiative, Is.EqualTo("No"));
                 Assert.That(model.FullName, Is.EqualTo("Jane Smith"));
                 Assert.That(model.EmailAddress, Is.EqualTo("jane@example.com"));
                 Assert.That(model.CanContact, Is.EqualTo("Yes"));
             });
+        }
+
+        [Test]
+        public void OnGet_lists_every_selected_service_in_catalogue_order()
+        {
+            SeedAnswers();
+            Session.SetTellUsWhatYouNeedService(_session, "REEP,MSI");
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson()));
+
+            model.OnGet();
+
+            Assert.That(model.Services, Is.EqualTo(new[]
+            {
+                "Manage School Improvement (MSI)",
+                "Record Engagement with Education Providers (REEP)"
+            }));
+        }
+
+        [Test]
+        public void OnPostCancel_resets_the_session_and_returns_to_the_start()
+        {
+            SeedAnswers();
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson()));
+
+            var result = model.OnPostCancel();
+
+            Assert.That(result, Is.InstanceOf<RedirectToPageResult>());
+            Assert.That(((RedirectToPageResult)result).PageName, Is.EqualTo("/Index"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.Null);
+                Assert.That(Session.GetTellUsWhatYouNeed(_session), Is.Null);
+                Assert.That(Session.GetAiInitiative(_session), Is.Null);
+                Assert.That(Session.GetAboutYouFullName(_session), Is.Null);
+            });
+        }
+
+        [Test]
+        public void OnPostCancel_carries_the_service_code_through_the_reset()
+        {
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson()));
+            model.ServiceCode = "FAST";
+
+            var result = (RedirectToPageResult)model.OnPostCancel();
+
+            Assert.That(result.RouteValues, Is.Not.Null);
+            Assert.That(result.RouteValues!["serviceCode"], Is.EqualTo("FAST"));
+        }
+
+        [Test]
+        public void OnPostCancel_has_no_route_values_when_no_service_code_is_carried()
+        {
+            var model = BuildModel(StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson()));
+
+            var result = (RedirectToPageResult)model.OnPostCancel();
+
+            Assert.That(result.RouteValues, Is.Null);
         }
 
         [Test]
@@ -84,7 +143,8 @@ namespace Dfe.Unified.Intake.Tests.Pages
             {
                 Assert.That(root.GetProperty("requestType").GetString(), Is.EqualTo("Suggest a change"));
                 Assert.That(root.GetProperty("service").GetString(),
-                    Is.EqualTo("Find Information about Schools and Trusts"));
+                    Is.EqualTo("Find Information about Schools and Trusts (FAST)"));
+                Assert.That(root.GetProperty("aiInitiative").GetString(), Is.EqualTo("No"));
                 Assert.That(root.GetProperty("submittedBy").GetProperty("name").GetString(), Is.EqualTo("Jane Smith"));
                 Assert.That(root.GetProperty("submittedBy").GetProperty("email").GetString(),
                     Is.EqualTo("jane@example.com"));
@@ -107,6 +167,35 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             using var doc = JsonDocument.Parse(handler.CapturedRequestBody!);
             Assert.That(doc.RootElement.GetProperty("contactPermission").GetString(), Is.EqualTo("No"));
+        }
+
+        [Test]
+        public async Task OnPost_maps_an_ai_initiative_answer_of_yes_to_string_yes()
+        {
+            SeedAnswers();
+            Session.SetAiInitiative(_session, "yes");
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler);
+
+            await model.OnPost();
+
+            using var doc = JsonDocument.Parse(handler.CapturedRequestBody!);
+            Assert.That(doc.RootElement.GetProperty("aiInitiative").GetString(), Is.EqualTo("Yes"));
+        }
+
+        [Test]
+        public async Task OnPost_sends_every_selected_service_as_one_comma_separated_value()
+        {
+            SeedAnswers();
+            Session.SetTellUsWhatYouNeedService(_session, "REEP,MSI");
+            var handler = StubHttpMessageHandler.RespondWith(HttpStatusCode.OK, SuccessJson());
+            var model = BuildModel(handler);
+
+            await model.OnPost();
+
+            using var doc = JsonDocument.Parse(handler.CapturedRequestBody!);
+            Assert.That(doc.RootElement.GetProperty("service").GetString(),
+                Is.EqualTo("Manage School Improvement (MSI), Record Engagement with Education Providers (REEP)"));
         }
 
         [Test]
@@ -147,7 +236,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.That(PageErrors.From(model.HttpContext),
                 Has.Some.EqualTo("Unable to create Azure DevOps work item."));
             // The answers are re-populated so the page still renders the summary lists.
-            Assert.That(model.Service, Is.EqualTo("Find Information about Schools and Trusts"));
+            Assert.That(model.Services, Is.EqualTo(new[] { "Find Information about Schools and Trusts (FAST)" }));
         }
 
         [Test]
@@ -425,8 +514,9 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
         private void SeedAnswers()
         {
-            Session.SetTellUsWhatYouNeedService(_session, "find-information-about-schools-and-trusts");
+            Session.SetTellUsWhatYouNeedService(_session, "FAST");
             Session.SetTellUsWhatYouNeed(_session, "suggest-a-change");
+            Session.SetAiInitiative(_session, "no");
             Session.SetAboutYouFullName(_session, "Jane Smith");
             Session.SetAboutYouEmailAddress(_session, "jane@example.com");
             Session.SetAboutYouRequestDetails(_session, "Please improve the dashboard.");

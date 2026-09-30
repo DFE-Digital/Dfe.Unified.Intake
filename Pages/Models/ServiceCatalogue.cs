@@ -1,0 +1,55 @@
+namespace Dfe.Unified.Intake.Pages.Models
+{
+    public sealed record ServiceOption(string Code, string Label, string? Hint = null);
+
+    public static class ServiceCatalogue
+    {
+        public const string SomethingNewCode = "SE";
+
+        public static readonly IReadOnlyList<ServiceOption> All =
+        [
+            new("Complete", "Complete Conversions and Transfers (Complete)"),
+            new("EAT", "External Applications - Academy Transfers (EAT)"),
+            new("FAST", "Find Information about Schools and Trusts (FAST)"),
+            new("MFSP", "Manage Free School Projects (MFSP)"),
+            new("MSI", "Manage School Improvement (MSI)"),
+            new("Prepare", "Prepare Conversions and Transfers (Prepare)"),
+            new("RECAST", "Record Concerns and Supports for Trusts (RECAST)"),
+            new("REEP", "Record Engagement with Education Providers (REEP)"),
+            new("VCC", "Vulnerable Children’s Casework (VCC)"),
+            new(SomethingNewCode, "Something new", "None of the services above match your request")
+        ];
+
+        public static IEnumerable<ServiceOption> NamedServices =>
+            All.Where(service => service.Code != SomethingNewCode);
+
+        public static ServiceOption SomethingNew =>
+            All.Single(service => service.Code == SomethingNewCode);
+
+        public static IReadOnlyList<string> Split(string? codes) =>
+            (codes ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+
+        public static string? NormaliseCode(string? code) =>
+            string.IsNullOrWhiteSpace(code)
+                ? null
+                : All.FirstOrDefault(service =>
+                    string.Equals(service.Code, code, StringComparison.OrdinalIgnoreCase))?.Code;
+
+        public static IReadOnlyList<string> LabelsFor(string? codes)
+        {
+            var selected = Split(codes);
+            if (selected.Count == 0)
+                return [];
+
+            var known = All
+                .Where(service => selected.Contains(service.Code, StringComparer.OrdinalIgnoreCase))
+                .Select(service => service.Label);
+
+            var unknown = selected.Where(code => NormaliseCode(code) is null);
+
+            return known.Concat(unknown).ToList();
+        }
+    }
+}

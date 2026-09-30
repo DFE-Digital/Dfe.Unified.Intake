@@ -39,6 +39,16 @@ namespace Dfe.Unified.Intake.Tests.Helpers
         }
 
         [Test]
+        public void AiInitiative_round_trips()
+        {
+            var value = _fixture.Create<string>();
+
+            Session.SetAiInitiative(_session, value);
+
+            Assert.That(Session.GetAiInitiative(_session), Is.EqualTo(value));
+        }
+
+        [Test]
         public void AboutYouFullName_round_trips()
         {
             var value = _fixture.Create<string>();
@@ -95,6 +105,7 @@ namespace Dfe.Unified.Intake.Tests.Helpers
             {
                 Assert.That(Session.GetTellUsWhatYouNeed(_session), Is.Null);
                 Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.Null);
+                Assert.That(Session.GetAiInitiative(_session), Is.Null);
                 Assert.That(Session.GetAboutYouFullName(_session), Is.Null);
                 Assert.That(Session.GetAboutYouEmailAddress(_session), Is.Null);
                 Assert.That(Session.GetAboutYouRequestDetails(_session), Is.Null);
@@ -108,6 +119,7 @@ namespace Dfe.Unified.Intake.Tests.Helpers
         {
             Session.SetTellUsWhatYouNeed(_session, _fixture.Create<string>());
             Session.SetTellUsWhatYouNeedService(_session, _fixture.Create<string>());
+            Session.SetAiInitiative(_session, _fixture.Create<string>());
             Session.SetAboutYouFullName(_session, _fixture.Create<string>());
             Session.SetAboutYouEmailAddress(_session, _fixture.Create<string>());
             Session.SetAboutYouRequestDetails(_session, _fixture.Create<string>());
@@ -120,6 +132,7 @@ namespace Dfe.Unified.Intake.Tests.Helpers
             {
                 Assert.That(Session.GetTellUsWhatYouNeed(_session), Is.Null);
                 Assert.That(Session.GetTellUsWhatYouNeedService(_session), Is.Null);
+                Assert.That(Session.GetAiInitiative(_session), Is.Null);
                 Assert.That(Session.GetAboutYouFullName(_session), Is.Null);
                 Assert.That(Session.GetAboutYouEmailAddress(_session), Is.Null);
                 Assert.That(Session.GetAboutYouRequestDetails(_session), Is.Null);

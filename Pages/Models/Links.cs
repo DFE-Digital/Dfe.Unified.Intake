@@ -14,6 +14,8 @@ namespace Dfe.Unified.Intake.Pages.Models
         }
 
         public static readonly LinkItem Index = Create(page: "/Index");
+        public static readonly LinkItem RequestAbout = Create(page: "/RequestAbout");
+        public static readonly LinkItem AiInitiative = Create(page: "/AiInitiative");
         public static readonly LinkItem AboutYou = Create(page: "/AboutYou");
         public static readonly LinkItem CheckYourAnswers = Create(page: "/CheckYourAnswers");
         public static readonly LinkItem RequestSubmitted = Create(page: "/RequestSubmitted");

@@ -53,7 +53,12 @@
         }
 
         <main class="govuk-main-wrapper" id="main-content" role="main">
-            @RenderBody()
+            @* Two-thirds keeps lines under roughly 75 characters, which is the readable maximum on desktop. *@
+            <div class="govuk-grid-row">
+                <div class="govuk-grid-column-two-thirds">
+                    @RenderBody()
+                </div>
+            </div>
         </main>
     </div>
 

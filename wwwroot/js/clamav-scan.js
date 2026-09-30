@@ -202,6 +202,9 @@
     }
 
     form.addEventListener("submit", function (event) {
+        if (event.submitter && event.submitter !== button) {
+            return;
+        }
         // Already verified by a prior scan — let the real submission through.
         if (form.getAttribute("data-scan-verified") === "true") {
             return;

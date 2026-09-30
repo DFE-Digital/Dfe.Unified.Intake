@@ -4,18 +4,11 @@ using GovUk.Frontend.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Text.Json;
-using System.Timers;
 
 namespace Dfe.Unified.Intake.Pages
 {
     public class CheckYourAnswersModel : PageModel
     {
-        private static readonly Dictionary<string, string> ServiceNames = new()
-        {
-            ["find-information-about-schools-and-trusts"] = "Find Information about Schools and Trusts"
-        };
-
-        // camelCase to match the field names in docs/power-automate-request.json.
         private static readonly JsonSerializerOptions SerializerOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -51,16 +44,16 @@ namespace Dfe.Unified.Intake.Pages
         // How many times to poll before giving up on a scan.Shared by the client and the server fallback.
         public int MaxPollAttempts { get; }
 
-        /// <summary>
-        /// Populated by JavaScript once every file has been scanned clean: a comma-separated list of the
-        /// ClamAV job ids. The final POST re-verifies these server-side before anything is sent on, so a
-        /// tampered or absent value simply triggers an authoritative re-scan rather than bypassing the gate.
-        /// </summary>
         [BindProperty]
         public string? ScanJobIds { get; set; }
 
-        public string? Service { get; private set; }
+        [BindProperty]
+        public string? ServiceCode { get; set; }
+
+        public IReadOnlyList<string> Services { get; private set; } = [];
+
         public string? RequestType { get; private set; }
+        public string? AiInitiative { get; private set; }
         public string? FullName { get; private set; }
         public string? EmailAddress { get; private set; }
         public string? RequestDetails { get; private set; }
@@ -77,10 +70,22 @@ namespace Dfe.Unified.Intake.Pages
             PopulateAnswers();
         }
 
+        public IActionResult OnPostCancel()
+        {
+            Session.Reset(HttpContext.Session);
+
+            var routeValues = string.IsNullOrWhiteSpace(ServiceCode)
+                ? null
+                : new { serviceCode = ServiceCode };
+
+            return RedirectToPage(Links.Index.PageName, routeValues);
+        }
+
         private void PopulateAnswers()
         {
-            Service = FormatServiceValue(Session.GetTellUsWhatYouNeedService(HttpContext.Session));
+            Services = ServiceCatalogue.LabelsFor(Session.GetTellUsWhatYouNeedService(HttpContext.Session));
             RequestType = FormatValue(Session.GetTellUsWhatYouNeed(HttpContext.Session));
+            AiInitiative = FormatValue(Session.GetAiInitiative(HttpContext.Session));
             FullName = Session.GetAboutYouFullName(HttpContext.Session);
             EmailAddress = Session.GetAboutYouEmailAddress(HttpContext.Session);
             RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session);
@@ -162,6 +167,7 @@ namespace Dfe.Unified.Intake.Pages
             }
 
             var request = await BuildSubmissionRequestAsync(documents);
+
             LogSubmissionPayload(request);
 
             return await SubmitToPowerAutomateAsync(request);
@@ -204,12 +210,16 @@ namespace Dfe.Unified.Intake.Pages
             return new SubmissionRequest
             {
                 RequestType = FormatValue(Session.GetTellUsWhatYouNeed(HttpContext.Session)),
-                Service = FormatServiceValue(Session.GetTellUsWhatYouNeedService(HttpContext.Session)),
+
+                Service = string.Join(
+                    ", ",
+                    ServiceCatalogue.LabelsFor(Session.GetTellUsWhatYouNeedService(HttpContext.Session))),
                 SubmittedBy = new SubmittedBy(
                     Session.GetAboutYouFullName(HttpContext.Session),
                     Session.GetAboutYouEmailAddress(HttpContext.Session)),
                 RequestDetails = Session.GetAboutYouRequestDetails(HttpContext.Session),
-                ContactPermission = ToYesNo(ParseCanContact(Session.GetAboutYouCanContact(HttpContext.Session))),
+                ContactPermission = ToYesNo(ParseYes(Session.GetAboutYouCanContact(HttpContext.Session))),
+                AiInitiative = ToYesNo(ParseYes(Session.GetAiInitiative(HttpContext.Session))),
                 Attachments = attachments
             };
         }
@@ -227,6 +237,7 @@ namespace Dfe.Unified.Intake.Pages
                         request.SubmittedBy,
                         request.RequestDetails,
                         request.ContactPermission,
+                        request.AiInitiative,
                         Attachments = request.Attachments
                             .Select(a => new { a.FileName, a.ContentType, ContentBytes = a.Content.Length })
                     },
@@ -349,16 +360,10 @@ namespace Dfe.Unified.Intake.Pages
             return Page();
         }
 
-        // The CanContact radio stores "yes"/"no"; parse it to a bool for internal use.
-        private static bool ParseCanContact(string? value) =>
+        private static bool ParseYes(string? value) =>
             string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
 
-        // Power automate expects contactPermission as a "yes"/"no" string, not a boolean.
         private static string ToYesNo(bool value) => value ? "Yes" : "No";
-
-        private static string? FormatServiceValue(string? value) =>
-            value is null ? null :
-            ServiceNames.TryGetValue(value, out var name) ? name : FormatValue(value);
 
         private static string? FormatValue(string? value) =>
             string.IsNullOrEmpty(value) ? null :

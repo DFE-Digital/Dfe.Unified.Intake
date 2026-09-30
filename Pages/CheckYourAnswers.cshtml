@@ -17,7 +17,12 @@
 <govuk-summary-list>
     <govuk-summary-list-row>
         <govuk-summary-list-row-key>Which service is your request for?</govuk-summary-list-row-key>
-        <govuk-summary-list-row-value>@Model.Service</govuk-summary-list-row-value>
+        <govuk-summary-list-row-value>
+            @foreach (var service in Model.Services)
+            {
+                <div>@service</div>
+            }
+        </govuk-summary-list-row-value>
         <govuk-summary-list-row-actions>
             <govuk-summary-list-row-action asp-page="/Index">
                 Change<span class="govuk-visually-hidden"> which service is your request for</span>
@@ -29,8 +34,18 @@
         <govuk-summary-list-row-key>What is your request about?</govuk-summary-list-row-key>
         <govuk-summary-list-row-value>@Model.RequestType</govuk-summary-list-row-value>
         <govuk-summary-list-row-actions>
-            <govuk-summary-list-row-action asp-page="/Index">
+            <govuk-summary-list-row-action asp-page="/RequestAbout">
                 Change<span class="govuk-visually-hidden"> what your request is about</span>
+            </govuk-summary-list-row-action>
+        </govuk-summary-list-row-actions>
+    </govuk-summary-list-row>
+
+    <govuk-summary-list-row>
+        <govuk-summary-list-row-key>Is your request related to an AI initiative?</govuk-summary-list-row-key>
+        <govuk-summary-list-row-value>@Model.AiInitiative</govuk-summary-list-row-value>
+        <govuk-summary-list-row-actions>
+            <govuk-summary-list-row-action asp-page="/AiInitiative">
+                Change<span class="govuk-visually-hidden"> whether your request is related to an AI initiative</span>
             </govuk-summary-list-row-action>
         </govuk-summary-list-row-actions>
     </govuk-summary-list-row>
@@ -71,7 +86,7 @@
 
     <govuk-summary-list-row>
         <govuk-summary-list-row-key>Supporting documentation</govuk-summary-list-row-key>
-        <govuk-summary-list-row-value>@(Model.SupportingInformationFileName ?? "None")</govuk-summary-list-row-value>
+        <govuk-summary-list-row-value>@(Model.SupportingInformationFileName ?? "No files uploaded")</govuk-summary-list-row-value>
         <govuk-summary-list-row-actions>
             <govuk-summary-list-row-action asp-page="/AboutYou">
                 Change<span class="govuk-visually-hidden"> supporting documentation</span>
@@ -91,13 +106,9 @@
 </govuk-summary-list>
 
 <h2 class="govuk-heading-m govuk-!-margin-top-6">Now send your request</h2>
-<p class="govuk-body">By submitting this request you are confirming that, to the best of your knowledge, the details you are providing are correct.</p>
+<p class="govuk-body">By submitting this request you confirm that the details you are providing are correct to the best of your knowledge.</p>
 
-    @* Virus scan progress. Only rendered when the ClamAv:IsEnabled feature flag is on. Hidden until
-       JavaScript starts the scans on submit; each row is updated in place as ClamAV reports its status.
-       Kept inside the form so the confirmed job ids post with the request. With JavaScript off this stays
-       hidden and the server scans the files synchronously instead. role="status"/aria-live announces
-       status changes to assistive technology. *@
+    @* Virus scan progress. *@
     @if (Model.IsScanningEnabled && Model.SupportingDocumentsList.Count > 0)
     {
         <div id="virus-scan-status"
@@ -126,11 +137,23 @@
         <input type="hidden" asp-for="ScanJobIds" />
     }
 
-    @* Submitting can take a while, so guard against a second submission: GOV.UK Frontend debounces
-       rapid double clicks via data-prevent-double-click, and site.js additionally disables the button
-       for the whole request. On a validation failure the page re-renders fresh, so the button is
-       enabled again with the error summary shown. *@
-    <govuk-button data-prevent-double-click="true">Submit request</govuk-button>
+    @* Submitting can take a while, so guard against a second submission *@
+    @* Cancel abandons the request, so it posts rather than following a link *@
+    <div class="govuk-button-group">
+        <govuk-button data-prevent-double-click="true">Submit request</govuk-button>
+        <button type="submit" form="cancel-request" class="govuk-link app-link--button">Cancel</button>
+    </div>
+</form>
+
+@* Abandoning the request is its own submission. *@
+<form id="cancel-request" method="post" asp-page-handler="Cancel">
+    @{
+        var cancelServiceCode = Request.Query["serviceCode"].ToString();
+    }
+    @if (!string.IsNullOrWhiteSpace(cancelServiceCode))
+    {
+        <input type="hidden" asp-for="ServiceCode" value="@cancelServiceCode" />
+    }
 </form>
 
 @section Scripts {
