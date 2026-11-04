@@ -49,7 +49,9 @@
             <div class="govuk-footer__meta-item govuk-footer__meta-item--grow">
                 <ul class="govuk-footer__inline-list">
                     <li class="govuk-footer__inline-list-item">
-                        <a class="govuk-footer__link" href="@(string.IsNullOrWhiteSpace(accessibilityUrl) ? "#" : accessibilityUrl)">Accessibility</a>
+                        <a class="govuk-footer__link" href="@(string.IsNullOrWhiteSpace(accessibilityUrl) ? "#" : accessibilityUrl)" target="_blank" rel="noopener noreferrer">
+                            Accessibility <span class="govuk-visually-hidden">(opens in new tab)</span>
+                        </a>
                     </li>
                 </ul>
                 <svg aria-hidden="true"
