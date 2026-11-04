@@ -11,6 +11,7 @@ namespace Dfe.Unified.Intake.Pages.Models
             new("Complete", "Complete Conversions and Transfers (Complete)"),
             new("EAT", "External Applications - Academy Transfers (EAT)"),
             new("FAST", "Find Information about Schools and Trusts (FAST)"),
+            new("LSRP", "Local SEND Reform Plans (LSRP)"),
             new("MFSP", "Manage Free School Projects (MFSP)"),
             new("MSI", "Manage School Improvement (MSI)"),
             new("Prepare", "Prepare Conversions and Transfers (Prepare)"),
