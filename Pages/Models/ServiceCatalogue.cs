@@ -16,7 +16,7 @@ namespace Dfe.Unified.Intake.Pages.Models
             new("MSI", "Manage School Improvement (MSI)"),
             new("Prepare", "Prepare Conversions and Transfers (Prepare)"),
             new("RECAST", "Record Concerns and Supports for Trusts (RECAST)"),
-            new("REEP", "Record Engagement with Education Providers (REEP)"),
+            new("REEP", "Record Engagements with External Partners (REEP)"),
             new("VCC", "Vulnerable Children’s Casework (VCC)"),
             new(SomethingNewCode, "Something new", "None of the services above match your request")
         ];

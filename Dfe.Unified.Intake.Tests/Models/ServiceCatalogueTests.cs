@@ -62,7 +62,7 @@ namespace Dfe.Unified.Intake.Tests.Models
             Assert.That(ServiceCatalogue.LabelsFor("REEP,MSI"), Is.EqualTo(new[]
             {
                 "Manage School Improvement (MSI)",
-                "Record Engagement with Education Providers (REEP)"
+                "Record Engagements with External Partners (REEP)"
             }));
         }
 
