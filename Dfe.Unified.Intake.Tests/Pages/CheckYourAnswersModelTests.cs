@@ -68,7 +68,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
             Assert.That(model.Services, Is.EqualTo(new[]
             {
                 "Manage School Improvement (MSI)",
-                "Record Engagement with Education Providers (REEP)"
+                "Record Engagements with External Partners (REEP)"
             }));
         }
 
@@ -195,7 +195,7 @@ namespace Dfe.Unified.Intake.Tests.Pages
 
             using var doc = JsonDocument.Parse(handler.CapturedRequestBody!);
             Assert.That(doc.RootElement.GetProperty("service").GetString(),
-                Is.EqualTo("Manage School Improvement (MSI), Record Engagement with Education Providers (REEP)"));
+                Is.EqualTo("Manage School Improvement (MSI), Record Engagements with External Partners (REEP)"));
         }
 
         [Test]
